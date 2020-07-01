@@ -506,7 +506,7 @@ comparison_of_remaining <- read_type_fractions_long %>%
     median = round(1-median(dataset_value), 2),
     p25 = round(1-quantile(dataset_value, 0.25), 2),
     p75 = round(1-quantile(dataset_value, 0.75), 2)) %>%
-  mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x=", median, "%)"))
+  mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x͂=", median, "%)"))
 
 positive_bars <- comparison_of_remaining %>%
   select(-min, -max, -p25, -p75) %>%
@@ -541,7 +541,7 @@ MEND_stats_of_total <- counts_and_meta  %>%
 
 MEND_bar <- tibble(read_type_fraction_name = "MEND reads",
                     read_type_fraction_label = read_type_fraction_name,
-                    bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x=", median, "%)")),
+                    bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x͂=", median, "%)")),
                     abs_median = 1,
                     position = "1",
                     #category_space = 1
