@@ -418,7 +418,7 @@ ggplot(this_data,
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
   ggtitle(this_plot_title)  + 
-  theme(legend.position="none") +
+  theme(legend.position="none",plot.title=element_text(size=22)) +
   xlab("Read counts (million)") +
   ylab("% Duplicates")
 
