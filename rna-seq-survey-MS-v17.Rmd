@@ -81,6 +81,44 @@ is_outlier <- function(x) {
     (x < quantile(x, 0.25) - 1.5*IQR(x))
 }
 
+
+# StatBin2 allows depiction of empty bins as blank instead of a horizontal line:
+# https://stackoverflow.com/questions/57128090/remove-baseline-color-for-geom-histogram
+StatBin2 <- ggproto(
+  "StatBin2", 
+  StatBin,
+  compute_group = function (data, scales, binwidth = NULL, bins = NULL, 
+                            center = NULL, boundary = NULL, 
+                            closed = c("right", "left"), pad = FALSE, 
+                            breaks = NULL, origin = NULL, right = NULL, 
+                            drop = NULL, width = NULL) {
+    if (!is.null(breaks)) {
+      if (!scales$x$is_discrete()) {
+        breaks <- scales$x$transform(breaks)
+      }
+      bins <- ggplot2:::bin_breaks(breaks, closed)
+    }
+    else if (!is.null(binwidth)) {
+      if (is.function(binwidth)) {
+        binwidth <- binwidth(data$x)
+      }
+      bins <- ggplot2:::bin_breaks_width(scales$x$dimension(), binwidth, 
+                                         center = center, boundary = boundary, 
+                                         closed = closed)
+    }
+    else {
+      bins <- ggplot2:::bin_breaks_bins(scales$x$dimension(), bins, 
+                                        center = center, boundary = boundary, 
+                                        closed = closed)
+    }
+    res <- ggplot2:::bin_vector(data$x, bins, weight = data$weight, pad = pad)
+
+    # drop 0-count bins completely before returning the dataframe
+    res <- res[res$count > 0, ] 
+
+    res
+  })
+
 ```
 
 # Import data
@@ -154,24 +192,26 @@ table(str_detect(counts_and_meta$disease, "leukemia"))
 library(ggthemes)
 
 old_cohort_size_histogram <- ggplot(counts_and_meta) + 
-  geom_histogram(aes(n_in_cohort, group=cohort), fill = "lightgrey", color = "black") +
+  geom_histogram(aes(n_in_cohort, group=cohort), 
+                 fill = "lightgrey", color = "black", stat = StatBin2) +
   # theme_linedraw(base_size = 20) +
   theme_minimal(base_size = 20) +
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +  xlab("Cohort size") +
-  ylab("Datasets") + 
+  ylab("Cohorts") + 
   theme(legend.position="none")
 
 cohort_size_histogram <- ggplot(
 counts_and_meta %>%
   select(cohort, n_in_cohort) %>%
   distinct ) + 
-  geom_histogram(aes(n_in_cohort), fill = "lightgrey", color = "black") +
+  geom_histogram(aes(n_in_cohort), 
+                 fill = "lightgrey", color = "black", stat = StatBin2) +
   # theme_linedraw(base_size = 20) +
   theme_minimal(base_size = 20) +
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +  xlab("Cohort size") +
-  ylab("Datasets") + 
+  ylab("Cohorts") + 
   theme(legend.position="none")
 
 cohort_size_histogram
@@ -222,7 +262,8 @@ summary(counts_and_meta$seq_length)
 IQR(counts_and_meta$seq_length, na.rm = TRUE)
 
  old_read_length_histogram <-  ggplot(counts_and_meta) + 
-  geom_histogram(aes(seq_length, group=cohort), fill = "lightgrey", color = "black") +
+  geom_histogram(aes(seq_length, group=cohort), 
+                 fill = "lightgrey", color = "black", stat = StatBin2) +
 #  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
@@ -231,7 +272,8 @@ IQR(counts_and_meta$seq_length, na.rm = TRUE)
     ylab("Datasets")
  
  read_length_histogram <-  ggplot(counts_and_meta) + 
-  geom_histogram(aes(seq_length), fill = "lightgrey", color = "black") +
+  geom_histogram(aes(seq_length), 
+                 fill = "lightgrey", color = "black", stat = StatBin2) +
 #  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
@@ -270,7 +312,8 @@ kable(Total_read_counts %>%
         select(-variance, -p25, -p75), digits = 1)
 
 total_read_count_histogram <-  ggplot(counts_and_meta) + 
-  geom_histogram(aes(Total_reads/1E6), fill = "lightgrey", color = "black") +
+  geom_histogram(aes(Total_reads/1E6), 
+                 fill = "lightgrey", color = "black", stat = StatBin2) +
 #  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
@@ -436,7 +479,7 @@ names(colors_for_read_types) <- gsub(" reads", "", names(these_colors_with_MEND)
 
 colors_for_read_types <- c(colors_for_read_types, 
                            "Genome" = "darkblue",
-                           "Gene" = "darkblue",
+                           "Exon" = "darkblue",
                            "Reads" = "darkgrey")
 
 plot1_colnames <- c("label", "x1", "x2", "y1", "y2")
@@ -466,6 +509,8 @@ read_type_schematic_data <- matrix(c("Duplicate", 3, 4, 6, 7,
     mid_bar_y = map2_dbl(y1, y2,  function(x, y) mean(c(x,y)))
   )
 
+
+
 padding_size = 0.35
 read_type_schematic <- ggplot(read_type_schematic_data, 
                               aes(xmin=x1, xmax=x2, ymin=y1, ymax = y2, 
@@ -483,7 +528,14 @@ read_type_schematic <- ggplot(read_type_schematic_data,
             fill = NA, color = "darkgrey", size = 0.25) +
   scale_fill_identity() +
   scale_color_identity() +
-  theme_void() 
+  theme_void() + 
+  theme(
+    panel.grid.major.x = element_line(color="lightgrey", size=0.2),
+    #panel.grid.minor.x = element_line(color="lightgrey", size=0.2)
+    ) + 
+ scale_x_continuous(
+   breaks = seq(min(read_type_schematic_data$x1) - padding_size + 0.25, max(read_type_schematic_data$x2 + padding_size), 0.25))
+#   minor_breaks = seq(4, 10, 0.25))
 
 read_type_schematic
 
@@ -506,7 +558,7 @@ comparison_of_remaining <- read_type_fractions_long %>%
     median = round(1-median(dataset_value), 2),
     p25 = round(1-quantile(dataset_value, 0.25), 2),
     p75 = round(1-quantile(dataset_value, 0.75), 2)) %>%
-  mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x=", median, "%)"))
+  mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x=", 100*median, "%)"))
 
 positive_bars <- comparison_of_remaining %>%
   select(-min, -max, -p25, -p75) %>%
@@ -541,7 +593,7 @@ MEND_stats_of_total <- counts_and_meta  %>%
 
 MEND_bar <- tibble(read_type_fraction_name = "MEND reads",
                     read_type_fraction_label = read_type_fraction_name,
-                    bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x=", median, "%)")),
+                    bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x=", 100*median, "%)")),
                     abs_median = 1,
                     position = "1",
                     #category_space = 1
@@ -666,43 +718,6 @@ read_type_fractions_long_for_histogram <- read_type_fractions_long %>%
   mutate(read_type_fraction_name = factor(read_type_fraction_name,
                                           levels = stat_names))
 
-# StatBin2 allows depiction of empty bins as blank instead of a horizontal line:
-# https://stackoverflow.com/questions/57128090/remove-baseline-color-for-geom-histogram
-StatBin2 <- ggproto(
-  "StatBin2", 
-  StatBin,
-  compute_group = function (data, scales, binwidth = NULL, bins = NULL, 
-                            center = NULL, boundary = NULL, 
-                            closed = c("right", "left"), pad = FALSE, 
-                            breaks = NULL, origin = NULL, right = NULL, 
-                            drop = NULL, width = NULL) {
-    if (!is.null(breaks)) {
-      if (!scales$x$is_discrete()) {
-        breaks <- scales$x$transform(breaks)
-      }
-      bins <- ggplot2:::bin_breaks(breaks, closed)
-    }
-    else if (!is.null(binwidth)) {
-      if (is.function(binwidth)) {
-        binwidth <- binwidth(data$x)
-      }
-      bins <- ggplot2:::bin_breaks_width(scales$x$dimension(), binwidth, 
-                                         center = center, boundary = boundary, 
-                                         closed = closed)
-    }
-    else {
-      bins <- ggplot2:::bin_breaks_bins(scales$x$dimension(), bins, 
-                                        center = center, boundary = boundary, 
-                                        closed = closed)
-    }
-    res <- ggplot2:::bin_vector(data$x, bins, weight = data$weight, pad = pad)
-
-    # drop 0-count bins completely before returning the dataframe
-    res <- res[res$count > 0, ] 
-
-    res
-  })
-
 read_type_fractions_histogram <-  ggplot(read_type_fractions_long_for_histogram) +
   # geom_histogram(aes(x = dataset_value, fill = read_type_fraction_name))  +
     geom_histogram(aes(x = dataset_value, color = read_type_fraction_name), 
@@ -751,7 +766,7 @@ comparison_of_distributions
   mutate(pct_MEND_of_total = MEND /Total_reads)
 
 ggplot(read_counts_with_MEND_fractions) + 
-  geom_histogram(aes(pct_MEND_of_total)) +
+  geom_histogram(aes(pct_MEND_of_total), stat = StatBin2) +
     theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) 
@@ -924,7 +939,7 @@ ggplot(subset(counts_and_meta_long_one_proj, dataset_id %in% datasets_to_plot)) 
 
 
 ggplot(counts_and_meta_long_one_proj %>% filter(read_type_name == "MEND")) + 
-  geom_histogram(aes(dataset_value/1e6)) +
+  geom_histogram(aes(dataset_value/1e6), stat = StatBin2) +
     theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
@@ -962,7 +977,7 @@ expressed_gene_counts_long <- counts_and_meta %>%
 
 
 ggplot (expressed_gene_counts_long) +
-  geom_histogram(aes(x=value)) +
+  geom_histogram(aes(x=value), stat = StatBin2) +
   facet_wrap(~name) 
 
 sort(counts_and_meta$genes_expressed_above_0) [1:100]
