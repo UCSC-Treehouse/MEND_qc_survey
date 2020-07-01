@@ -1042,8 +1042,9 @@ datasets_with_outlier_depths <- counts_and_meta %>%
 ```{r rna-seq-survey-MS-v16-40}
 
 plot_gene_count_correlations <- function(this_data = expr_gene_and_read_counts_to_plot, this_plot_title = "gene count correlations"){
-
-these_stats <- this_data  %>%
+  this_data <- this_data  %>%
+  mutate(Expression_threshold = str_replace(Expression_threshold, "genes_expressed_above_", "genes above "))
+these_stats <- this_data %>%
 group_by(Read_type, Expression_threshold) %>%
   summarize(r_corr = round(cor(Gene_count, Read_count), 2))
 
