@@ -27,7 +27,7 @@ V14 - combine plots
 
 V13 - change gene count threshold from categporical to numeric 
 
-V12 - exclude samples with fewer than 100 measured genes and use pre-generated survey_data
+V12 - exclude datasets with fewer than 100 measured genes and use pre-generated survey_data
 
 V11 - color consistency
 
@@ -121,7 +121,7 @@ these_colors_with_MEND = c(these_colors, "MEND reads"="#000000")
 ```
 
 
-# Samples analyzed
+# Datasets analyzed
 ```{r rna-seq-survey-MS-v16-7}
 
 nrow(counts_and_meta)
@@ -165,7 +165,7 @@ project_size_histogram <- ggplot(counts_and_meta) +
   theme_minimal(base_size = 20) +
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +  xlab("Project size") +
-  ylab("Samples") + 
+  ylab("Datasets") + 
   theme(legend.position="none")
 
 project_size_histogram
@@ -189,12 +189,12 @@ counts_and_meta %>%
 
 
 table(counts_and_meta$pedaya, useNA = "always")
-table(subset(counts_and_meta, is.na(pedaya))$sample_prefix)
+table(subset(counts_and_meta, is.na(pedaya))$dataset_prefix)
 
-n_ped_aya <- sum(counts_and_meta$pedaya=="Yes, age < 30 years" | grepl("TARGET", counts_and_meta$sample_prefix), na.rm = TRUE)
+n_ped_aya <- sum(counts_and_meta$pedaya=="Yes, age < 30 years" | grepl("TARGET", counts_and_meta$dataset_prefix), na.rm = TRUE)
 n_ped_aya
 n_ped_aya/nrow(counts_and_meta)
-# more than 95% of which are pediatric <30; of the samples with specific ages at diagnosis reported, the median was 7
+# more than 95% of which are pediatric <30; of the Datasets with specific ages at diagnosis reported, the median was 7
 
 median(counts_and_meta$age_at_dx, na.rm = TRUE)
 
@@ -222,7 +222,7 @@ IQR(counts_and_meta$seq_length, na.rm = TRUE)
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
   xlab("Sequence length") +
-    ylab("Samples")
+    ylab("Datasets")
   
 read_length_histogram
 
@@ -242,14 +242,14 @@ min(counts_and_meta$Total_reads)
 
 Total_read_counts <- counts_and_meta %>% 
   ungroup %>%
-  mutate(sample_value = Total_reads/1e6) %>%
-  summarize(variance= var(sample_value),
-            min = min(sample_value),
-            max = max(sample_value),
-            median = median(sample_value),
-            p25 = quantile(sample_value, 0.25),
-            p75 = quantile(sample_value, 0.75),
-            iqr = IQR(sample_value))
+  mutate(dataset_value = Total_reads/1e6) %>%
+  summarize(variance= var(dataset_value),
+            min = min(dataset_value),
+            max = max(dataset_value),
+            median = median(dataset_value),
+            p25 = quantile(dataset_value, 0.25),
+            p75 = quantile(dataset_value, 0.75),
+            iqr = IQR(dataset_value))
 
 kable(Total_read_counts %>%
         select(-variance, -p25, -p75), digits = 1)
@@ -261,7 +261,7 @@ total_read_count_histogram <-  ggplot(counts_and_meta) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
   xlab("Total reads") +
-    ylab("Samples")
+    ylab("Datasets")
 
 total_read_count_histogram
 ```
@@ -280,8 +280,8 @@ total_read_count_histogram
   )
 
 read_type_fractions_long <- read_counts_with_read_type_fractions %>%
-#  select(c(sample_id, project_id, project, starts_with("pct_"))) %>%
-  pivot_longer(cols = starts_with("pct_"), names_to = "read_type_fraction_name", values_to = "sample_value") 
+#  select(c(dataset_id, project_id, project, starts_with("pct_"))) %>%
+  pivot_longer(cols = starts_with("pct_"), names_to = "read_type_fraction_name", values_to = "dataset_value") 
 
 
 ```
@@ -291,13 +291,13 @@ read_type_fractions_long <- read_counts_with_read_type_fractions %>%
 
 comparison_of_distributions <- read_type_fractions_long %>% 
   group_by(read_type_fraction_name) %>%
-  summarize(variance= var(sample_value),
-            min = min(sample_value),
-            max = max(sample_value),
-            median = median(sample_value),
-            p25 = quantile(sample_value, 0.25),
-            p75 = quantile(sample_value, 0.75),
-            iqr = IQR(sample_value))
+  summarize(variance= var(dataset_value),
+            min = min(dataset_value),
+            max = max(dataset_value),
+            median = median(dataset_value),
+            p25 = quantile(dataset_value, 0.25),
+            p75 = quantile(dataset_value, 0.75),
+            iqr = IQR(dataset_value))
 
 kable(comparison_of_distributions %>%
       mutate_if(is.double, ~100*.), digits = 3)
@@ -313,28 +313,28 @@ kable(comparison_of_distributions %>%
 # statements about read type fractions
 ## unmapped
 ```{r rna-seq-survey-MS-v16-16}
-# in 77 samples, more than 25% of reads are unmapped
+# in 77 datasets, more than 25% of reads are unmapped
 table(read_counts_with_read_type_fractions$pct_unmapped_of_total>0.25)
 ```
 
 ## duplicate
 ```{r rna-seq-survey-MS-v16-17}
-# in 77 samples, more than 25% of reads are unmapped
+# in 77 datasets, more than 25% of reads are unmapped
 read_counts_with_read_type_fractions %>%
   mutate(above_50 = pct_dupe_of_mapped>0.50) %>%
   tabyl(above_50)
 
 fiftypct <- read_counts_with_read_type_fractions %>%
   group_by(project) %>%
-  summarize(has_a_sample_with_more_than_50pct_dupes = any(pct_dupe_of_mapped>0.50),
+  summarize(has_a_dataset_with_more_than_50pct_dupes = any(pct_dupe_of_mapped>0.50),
             median_pct_dupe_of_mapped = median(pct_dupe_of_mapped)) %>%
   mutate(median_lt_50 = median_pct_dupe_of_mapped < 0.5,
-         median_lt_50_and_has_a_sample = median_lt_50 & has_a_sample_with_more_than_50pct_dupes)
+         median_lt_50_and_has_a_dataset = median_lt_50 & has_a_dataset_with_more_than_50pct_dupes)
 
 
 fiftypct %>% tabyl(median_lt_50)
-fiftypct %>% tabyl(has_a_sample_with_more_than_50pct_dupes)
-fiftypct %>% tabyl(median_lt_50_and_has_a_sample)
+fiftypct %>% tabyl(has_a_dataset_with_more_than_50pct_dupes)
+fiftypct %>% tabyl(median_lt_50_and_has_a_dataset)
 ```
 
 ## exonic
@@ -345,15 +345,15 @@ read_counts_with_read_type_fractions %>%
 
 fiftypcte <- read_counts_with_read_type_fractions %>%
   group_by(project) %>%
-  summarize(has_a_sample_with_more_than_50pct_ne = any(pct_non_exonic_of_non_dupe>0.50),
+  summarize(has_a_dataset_with_more_than_50pct_ne = any(pct_non_exonic_of_non_dupe>0.50),
             median_pct_dupe_of_mapped = median(pct_non_exonic_of_non_dupe)) %>%
   mutate(median_lt_50 = median_pct_dupe_of_mapped < 0.5,
-         median_lt_50_and_has_a_sample = median_lt_50 & has_a_sample_with_more_than_50pct_ne)
+         median_lt_50_and_has_a_dataset = median_lt_50 & has_a_dataset_with_more_than_50pct_ne)
 
 
 fiftypcte %>% tabyl(median_lt_50)
-fiftypcte %>% tabyl(has_a_sample_with_more_than_50pct_ne)
-fiftypcte %>% tabyl(median_lt_50_and_has_a_sample)
+fiftypcte %>% tabyl(has_a_dataset_with_more_than_50pct_ne)
+fiftypcte %>% tabyl(median_lt_50_and_has_a_dataset)
 ```
 
 
@@ -486,11 +486,11 @@ divisor_name = c("total", "mapped", "non-duplicate")
 comparison_of_remaining <- read_type_fractions_long %>% 
   mutate(read_type_fraction_name = complement_stat_names[match(read_type_fraction_name, stat_names)]) %>%
   group_by(read_type_fraction_name) %>%
-  summarize(min = round(1-max(sample_value), 2),
-    max = round(1-min(sample_value), 2),
-    median = round(1-median(sample_value), 2),
-    p25 = round(1-quantile(sample_value, 0.25), 2),
-    p75 = round(1-quantile(sample_value, 0.75), 2)) %>%
+  summarize(min = round(1-max(dataset_value), 2),
+    max = round(1-min(dataset_value), 2),
+    median = round(1-median(dataset_value), 2),
+    p25 = round(1-quantile(dataset_value, 0.25), 2),
+    p75 = round(1-quantile(dataset_value, 0.75), 2)) %>%
   mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x=", median, "%)"))
 
 positive_bars <- comparison_of_remaining %>%
@@ -689,8 +689,8 @@ StatBin2 <- ggproto(
   })
 
 read_type_fractions_histogram <-  ggplot(read_type_fractions_long_for_histogram) +
-  # geom_histogram(aes(x = sample_value, fill = read_type_fraction_name))  +
-    geom_histogram(aes(x = sample_value, color = read_type_fraction_name), 
+  # geom_histogram(aes(x = dataset_value, fill = read_type_fraction_name))  +
+    geom_histogram(aes(x = dataset_value, color = read_type_fraction_name), 
                    fill = "white", stat = StatBin2)  +
   # scale_fill_brewer(palette = "Set1") +
   scale_color_manual(values = colors_for_stat_names) +
@@ -701,8 +701,8 @@ read_type_fractions_histogram <-  ggplot(read_type_fractions_long_for_histogram)
                read_type_fraction_name = stat_label
                )
              ) +
-  ylab("Samples") +
-  xlab(paste0("Read type percentages in ", length(unique(read_type_fractions_long_for_histogram$sample_id)),  " samples")) +
+  ylab("Datasets") +
+  xlab(paste0("Read type percentages in ", length(unique(read_type_fractions_long_for_histogram$dataset_id)),  " datasets")) +
   scale_x_continuous(breaks = seq(0, 1, by = 0.5)) +
   #  expand_limits(x = c(-0.25, 0.9)) +
 #  ggtitle(plot_title) +
@@ -719,7 +719,7 @@ read_type_fractions_histogram
 
 # Statements about read fractions
 ```{r rna-seq-survey-MS-v16-27}
-# 75% of  samples have fewer than 7% unmapped reads 
+# 75% of  datasets have fewer than 7% unmapped reads 
 read_counts_with_read_type_fractions
 
 comparison_of_distributions
@@ -745,14 +745,14 @@ ggplot(read_counts_with_MEND_fractions) +
 
 MEND_pct <- read_counts_with_MEND_fractions %>% 
   ungroup %>%
-  mutate(sample_value = pct_MEND_of_total) %>%
-  summarize(variance= var(sample_value),
-            min = min(sample_value),
-            max = max(sample_value),
-            median = median(sample_value),
-            p25 = quantile(sample_value, 0.25),
-            p75 = quantile(sample_value, 0.75),
-            iqr = IQR(sample_value))
+  mutate(dataset_value = pct_MEND_of_total) %>%
+  summarize(variance= var(dataset_value),
+            min = min(dataset_value),
+            max = max(dataset_value),
+            median = median(dataset_value),
+            p25 = quantile(dataset_value, 0.25),
+            p75 = quantile(dataset_value, 0.75),
+            iqr = IQR(dataset_value))
 
 kable(MEND_pct %>%
         select(-variance, -p25, -p75) %>%
@@ -773,7 +773,7 @@ read_type_fractions_long_for_boxplot <- read_type_fractions_long_for_histogram %
 
 
 read_type_fractions_per_project_boxplot <- ggplot(read_type_fractions_long_for_boxplot) +
-  geom_boxplot(aes(x = sample_value, y=boxplot_label), outlier.size = 0.5)  +
+  geom_boxplot(aes(x = dataset_value, y=boxplot_label), outlier.size = 0.5)  +
   facet_wrap(~read_type_fraction_name, 
              nrow = 1, 
              labeller = labeller(
@@ -781,7 +781,7 @@ read_type_fractions_per_project_boxplot <- ggplot(read_type_fractions_long_for_b
              )
   ) +
   ylab("Projects") +
-  xlab(paste0("Read type percentages in ", length(unique(read_type_fractions_long_for_boxplot$sample_id)),  " samples")) +
+  xlab(paste0("Read type percentages in ", length(unique(read_type_fractions_long_for_boxplot$dataset_id)),  " datasets")) +
   scale_x_continuous(breaks = seq(0, 1, by = 0.5)) +
     theme_minimal() +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
@@ -865,7 +865,7 @@ read_counts_with_read_type_fractions %>%
 
 
  counts_and_meta_long <- counts_and_meta  %>%
-  pivot_longer(cols = c(Total_reads, Mapped, MEND, MND), names_to = "read_type_name", values_to = "sample_value")  %>%
+  pivot_longer(cols = c(Total_reads, Mapped, MEND, MND), names_to = "read_type_name", values_to = "dataset_value")  %>%
    ungroup %>%
    mutate(read_type_name = factor(read_type_name, levels = read_type_names))
 
@@ -878,38 +878,38 @@ counts_and_meta_long_one_proj <-  counts_and_meta_long %>%
 table(counts_and_meta_long_one_proj$read_type_name)
  
  
-# 78 samples in the project have fewer than 0.2 million MEND reads. 
-sum((counts_and_meta_long_one_proj %>% filter(read_type_name=="MEND"))$sample_value < 200000)
-those_samples <- counts_and_meta_long_one_proj %>% filter(read_type_name=="MEND", sample_value < 200000) %>% pull(sample_id)
+# 78 datasets in the project have fewer than 0.2 million MEND reads. 
+sum((counts_and_meta_long_one_proj %>% filter(read_type_name=="MEND"))$dataset_value < 200000)
+those_datasets <- counts_and_meta_long_one_proj %>% filter(read_type_name=="MEND", dataset_value < 200000) %>% pull(dataset_id)
 
 
-summary((counts_and_meta_long_one_proj %>% filter(read_type_name=="Total_reads", sample_id %in% those_samples))$sample_value)
+summary((counts_and_meta_long_one_proj %>% filter(read_type_name=="Total_reads", dataset_id %in% those_datasets))$dataset_value)
 
 
 max_plots_to_include <- 10
-n_samples_to_plot <- ifelse(n_distinct(counts_and_meta_long_one_proj$sample_id)>max_plots_to_include, 
+n_datasets_to_plot <- ifelse(n_distinct(counts_and_meta_long_one_proj$dataset_id)>max_plots_to_include, 
                          max_plots_to_include, 
-                         n_distinct(counts_and_meta_long_one_proj$sample_id))
-plot_word <- ifelse(n_samples_to_plot==max_plots_to_include, max_plots_to_include, paste("all", n_distinct(counts_and_meta_long_one_proj$sample_id)))
+                         n_distinct(counts_and_meta_long_one_proj$dataset_id))
+plot_word <- ifelse(n_datasets_to_plot==max_plots_to_include, max_plots_to_include, paste("all", n_distinct(counts_and_meta_long_one_proj$dataset_id)))
 
 set.seed(100)
-samples_to_plot <- sample(unique(counts_and_meta_long_one_proj$sample_id), n_samples_to_plot)
+datasets_to_plot <- sample(unique(counts_and_meta_long_one_proj$dataset_id), n_datasets_to_plot)
 
-ggplot(subset(counts_and_meta_long_one_proj, sample_id %in% samples_to_plot)) + 
-  geom_col(aes(x=read_type_name, y=sample_value/1e6, fill = read_type_name)) +
-  facet_wrap(~sample_id, ncol = 1, strip.position="right")  +
+ggplot(subset(counts_and_meta_long_one_proj, dataset_id %in% datasets_to_plot)) + 
+  geom_col(aes(x=read_type_name, y=dataset_value/1e6, fill = read_type_name)) +
+  facet_wrap(~dataset_id, ncol = 1, strip.position="right")  +
     theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
   theme(strip.text.y = element_text(angle = 0)) +
   scale_fill_brewer(palette = "Set1")  +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-  ggtitle(paste("Read counts for", plot_word, "samples from", this_project)) +
+  ggtitle(paste("Read counts for", plot_word, "datasets from", this_project)) +
   coord_flip()
 
 
 ggplot(counts_and_meta_long_one_proj %>% filter(read_type_name == "MEND")) + 
-  geom_histogram(aes(sample_value/1e6)) +
+  geom_histogram(aes(dataset_value/1e6)) +
     theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
@@ -928,10 +928,10 @@ ggplot(counts_and_meta %>%
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
   # scale_color_gradientn() +
   scale_fill_gradientn(colours = c(bl,"white", re)) +
-  ggtitle(paste("Relationship of dupe fraction to MEND count in", this_project), "For detecting whether samples with less info were sequenced more deeply. \nNormally, higher depth samples have more MEND reads and more duplicate \nreads than the same sample sequenced at a lower total depth.")
+  ggtitle(paste("Relationship of dupe fraction to MEND count in", this_project), "For detecting whether datasets with less info were sequenced more deeply. \nNormally, higher depth datasets have more MEND reads and more duplicate \nreads than the same dataset sequenced at a lower total depth.")
 
 counts_and_meta_long_one_proj %>%
-  select(seq_length, sample_id) %>%
+  select(seq_length, dataset_id) %>%
   distinct %>%
   tabyl(seq_length)
 
@@ -954,7 +954,7 @@ sort(counts_and_meta$genes_expressed_above_0) [1:100]
 
 ```
 
-## correlations with all samples
+## correlations with all datasets
 ```{r rna-seq-survey-MS-v16-36}
 library(corrr)
 
@@ -968,12 +968,12 @@ counts_and_meta %>%
   mutate(Read_type_count = factor(Read_type_count, levels = read_type_names)) %>%
   arrange(Read_type_count) %>%
   select(c(Read_type_count, starts_with("genes_expressed"))) %>%
-  kable(caption = "Correlations with all samples", digits = 2)
+  kable(caption = "Correlations with all datasets", digits = 2)
 
 ```
 
 
-## correlations with all but low gene count samples
+## correlations with all but low gene count datasets
 ```{r rna-seq-survey-MS-v16-37}
 
 counts_and_meta %>% 
@@ -986,7 +986,7 @@ counts_and_meta %>%
   mutate(Read_type_count = factor(Read_type_count, levels = read_type_names)) %>%
   arrange(Read_type_count) %>%
   select(c(Read_type_count, starts_with("genes_expressed"))) %>%
-  kable(caption = "Correlations with all but low gene count samples", digits = 2)
+  kable(caption = "Correlations with all but low gene count datasets", digits = 2)
 
 ```
 
@@ -1003,22 +1003,22 @@ expr_gene_and_read_counts_to_plot <- counts_and_meta %>%
 ```
 
 
-## Identify samples with unusual gene counts or read depths
+## Identify datasets with unusual gene counts or read depths
 ```{r rna-seq-survey-MS-v16-39}
 
-samples_with_normal_expressed_gene_numbers <- counts_and_meta %>%
+datasets_with_normal_expressed_gene_numbers <- counts_and_meta %>%
   filter(genes_expressed_above_0 > min_genes_gt_0) %>%
-  pull(sample_id)
+  pull(dataset_id)
 
-samples_with_outlier_gene_counts <- counts_and_meta %>%
+datasets_with_outlier_gene_counts <- counts_and_meta %>%
   ungroup %>%
   filter(is_outlier(genes_expressed_above_0)) %>%
-  pull(sample_id) 
+  pull(dataset_id) 
 
-samples_with_outlier_depths <- counts_and_meta %>%
+datasets_with_outlier_depths <- counts_and_meta %>%
   ungroup %>%
   filter(is_outlier(Total_reads)) %>%
-  pull(sample_id) 
+  pull(dataset_id) 
 
 
 ```
@@ -1062,37 +1062,37 @@ ggplot(this_data,
 }
 
 ```
-## for all samples
+## for all datasets
 ```{r rna-seq-survey-MS-v16-41}
 
 plot_gene_count_correlations(expr_gene_and_read_counts_to_plot,
-                             "Correlations calculated across all samples")
+                             "Correlations calculated across all datasets")
 
 plot_gene_count_correlations(expr_gene_and_read_counts_to_plot %>% 
-  filter(sample_id %in% samples_with_normal_expressed_gene_numbers),
-  paste("Correlations in samples with more than", min_genes_gt_0, "genes expressed above 0"))
+  filter(dataset_id %in% datasets_with_normal_expressed_gene_numbers),
+  paste("Correlations in datasets with more than", min_genes_gt_0, "genes expressed above 0"))
 
 plot_gene_count_correlations(expr_gene_and_read_counts_to_plot %>% 
-  filter(! sample_id %in% samples_with_outlier_gene_counts),
-  paste("Correlations calculated across all but outlier gene count samples"))
-
-
-plot_gene_count_correlations(expr_gene_and_read_counts_to_plot %>% 
-  filter(! sample_id %in% samples_with_outlier_depths),
-  paste("Correlations calculated across all but outlier read depth samples"))
+  filter(! dataset_id %in% datasets_with_outlier_gene_counts),
+  paste("Correlations calculated across all but outlier gene count datasets"))
 
 
 plot_gene_count_correlations(expr_gene_and_read_counts_to_plot %>% 
-  filter(! sample_id %in% samples_with_outlier_depths, 
-         ! sample_id %in% samples_with_outlier_gene_counts
+  filter(! dataset_id %in% datasets_with_outlier_depths),
+  paste("Correlations calculated across all but outlier read depth datasets"))
+
+
+plot_gene_count_correlations(expr_gene_and_read_counts_to_plot %>% 
+  filter(! dataset_id %in% datasets_with_outlier_depths, 
+         ! dataset_id %in% datasets_with_outlier_gene_counts
          ),
-  paste("Correlations calculated across all but samples with outlier read depth or gene count"))
+  paste("Correlations calculated across all but datasets with outlier read depth or gene count"))
 
 
 plot_gene_count_correlations(
   expr_gene_and_read_counts_to_plot %>% 
     filter(disease ==  "acute lymphoblastic leukemia"),
-  "Correlations calculated among acute lymphoblastic leukemia samples")
+  "Correlations calculated among acute lymphoblastic leukemia datasets")
 
 
 ```
@@ -1104,24 +1104,24 @@ max_total_read_depth <- 250*1e6
 # min_genes_gt_0
 exclude_for_depth <- counts_and_meta %>%
   filter(Total_reads > max_total_read_depth) %>%
-  pull(sample_id)
+  pull(dataset_id)
 
 exclude_for_gene_count <- counts_and_meta %>%
   filter(genes_expressed_above_0 < min_genes_gt_0) %>%
-  pull(sample_id)
+  pull(dataset_id)
 
 
 this_data <- expr_gene_and_read_counts_to_plot %>% 
       filter(
         Expression_threshold %in% paste0("genes_expressed_above_", 1:3),
-       ! sample_id %in% exclude_for_depth, 
-        ! sample_id %in% exclude_for_gene_count
+       ! dataset_id %in% exclude_for_depth, 
+        ! dataset_id %in% exclude_for_gene_count
       ) %>%
   mutate(Expression_threshold = str_replace(Expression_threshold, "genes_expressed_above_", "genes above "))
 
-n_distinct(this_data$sample_id)
+n_distinct(this_data$dataset_id)
 
-this_plot_title <- paste("Correlations calculated across all but samples with excessive read depth or low gene count")
+this_plot_title <- paste("Correlations calculated across all but datasets with excessive read depth or low gene count")
 
 these_stats <- this_data  %>%
 group_by(Read_type, Expression_threshold) %>%
@@ -1130,7 +1130,7 @@ group_by(Read_type, Expression_threshold) %>%
 colors_for_correlation_plot <- c("Total_reads"="#1F78B4", "Mapped"="#FF7F00", 
 "MND"="#E31A1C", "MEND"="#000000")
 
-cor_plots_excluding_high_read_depth_and_low_gene_count_samples <- ggplot(this_data,
+cor_plots_excluding_high_read_depth_and_low_gene_count_datasets <- ggplot(this_data,
        aes(x=Read_count/1E6, y=Gene_count/1e3, color = Read_type)) + 
   geom_point(alpha = 0.5, shape = 20, size =0.1) +
   geom_smooth(method = "lm", color = "black") +
@@ -1152,7 +1152,7 @@ cor_plots_excluding_high_read_depth_and_low_gene_count_samples <- ggplot(this_da
   ylab("Gene counts (thousand)") 
 
 
-cor_plots_excluding_high_read_depth_and_low_gene_count_samples
+cor_plots_excluding_high_read_depth_and_low_gene_count_datasets
 
 ```
 
@@ -1161,12 +1161,12 @@ cor_plots_excluding_high_read_depth_and_low_gene_count_samples
 # this_data <- expr_gene_and_read_counts_to_plot %>% 
 #       filter(
 #         Expression_threshold %in% paste0("genes_expressed_above_", 1:3),
-#    #     ! sample_id %in% samples_with_outlier_depths, 
-#    #     ! sample_id %in% samples_with_outlier_gene_counts
+#    #     ! dataset_id %in% datasets_with_outlier_depths, 
+#    #     ! dataset_id %in% datasets_with_outlier_gene_counts
 #       ) %>%
 #   mutate(Expression_threshold = str_replace(Expression_threshold, "genes_expressed_above_", "genes above "))
 # 
-# this_plot_title <- paste("Correlations calculated across all but samples with outlier read depth or gene count")
+# this_plot_title <- paste("Correlations calculated across all but datasets with outlier read depth or gene count")
 # 
 # these_stats <- this_data  %>%
 # group_by(Read_type, Expression_threshold) %>%
@@ -1219,7 +1219,7 @@ f2ab <- plot_grid(f2a,
                   rel_heights = c(1.5, 6),
                   align = "v",
                   labels = "AUTO")
-f2c <- plot_grid(cor_plots_excluding_high_read_depth_and_low_gene_count_samples,
+f2c <- plot_grid(cor_plots_excluding_high_read_depth_and_low_gene_count_datasets,
           labels = "C")
 
 
@@ -1246,7 +1246,7 @@ readDist_data_raw <- read_tsv("readDist/readDist_groomed.2020_06_09.txt")
 
 
 readDist_data <- readDist_data_raw %>%
-  rename(sample_id = source_file) %>%
+  rename(dataset_id = source_file) %>%
   unite("new_col_name", c(Measurement, Measurement_type)) %>%
   pivot_wider(names_from = new_col_name, values_from = Count) %>%
   mutate(
@@ -1255,7 +1255,7 @@ readDist_data <- readDist_data_raw %>%
     gene_adjacent_tag_count=Total_genic_tag_count + `TSS_up_10kb_Tag count` + `TES_down_10kb_Tag count`)
 
 expr_gene_and_sub_read_counts <- counts_and_meta %>%
-    left_join(readDist_data, by=c("sample_id"))
+    left_join(readDist_data, by=c("dataset_id"))
 
 ```
 # function for calculating correlations and plotting results
@@ -1324,31 +1324,31 @@ return(list(p0, p1, p2, p3))
 
 ```
 
-## All samples
+## All datasets
 ```{r rna-seq-survey-MS-v16-47, fig.height=8, fig.width=8}
-plot_cors(expr_gene_and_sub_read_counts, "All samples")
+plot_cors(expr_gene_and_sub_read_counts, "All datasets")
 ```
 ## Subsets
 ```{r rna-seq-survey-MS-v16-48, fig.height=8, fig.width=8}
 
 plot_cors(expr_gene_and_sub_read_counts%>% 
-  filter(sample_id %in% samples_with_normal_expressed_gene_numbers),
-          paste("samples with more than", min_genes_gt_0, "genes expressed above 0"))
+  filter(dataset_id %in% datasets_with_normal_expressed_gene_numbers),
+          paste("datasets with more than", min_genes_gt_0, "genes expressed above 0"))
 
 plot_cors(expr_gene_and_sub_read_counts%>% 
-  filter(! sample_id %in% samples_with_outlier_gene_counts),
-          paste("samples with non-outlier gene counts"))
+  filter(! dataset_id %in% datasets_with_outlier_gene_counts),
+          paste("datasets with non-outlier gene counts"))
 
 plot_cors(expr_gene_and_sub_read_counts%>% 
-  filter(! sample_id %in% samples_with_outlier_depths, 
-         ! sample_id %in% samples_with_outlier_gene_counts
+  filter(! dataset_id %in% datasets_with_outlier_depths, 
+         ! dataset_id %in% datasets_with_outlier_gene_counts
          ),
-          paste("samples with non-outlier gene counts and non outlier depths"))
+          paste("datasets with non-outlier gene counts and non outlier depths"))
 
 
 plot_cors(expr_gene_and_sub_read_counts%>% 
   filter(disease ==  "acute lymphoblastic leukemia"),
-          "All acute lymphoblastic leukemia samples")
+          "All acute lymphoblastic leukemia datasets")
 ```
 
 

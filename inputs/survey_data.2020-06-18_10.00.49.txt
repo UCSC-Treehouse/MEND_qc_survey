@@ -1,4 +1,4 @@
-sample_id	MND	MEND	Total_reads	Mapped	project	seq_length	source_accession	original_sample_id	disease	sample_prefix	age_at_dx	pedaya	gender	genes_expressed_above_0	genes_expressed_above_1	genes_expressed_above_2	genes_expressed_above_3	genes_expressed_above_4	genes_expressed_above_5
+dataset_id	MND	MEND	Total_reads	Mapped	cohort	seq_length	source_accession	original_sample_id	disease	sample_prefix	age_at_dx	pedaya	gender	genes_expressed_above_0	genes_expressed_above_1	genes_expressed_above_2	genes_expressed_above_3	genes_expressed_above_4	genes_expressed_above_5
 TARGET-10-DCC001-03A-01R	82680982	39305215.8	108969629	95350003	TARGET-10	75	phs000218	TARGET-10-DCC001-03A-01R	acute lymphoblastic leukemia	TARGET	NA	NA	unknown	29025	17140	14533	13092	12084	11302
 TARGET-10-DCC002-09A-01R	23895040	15181142.375	35070742	27893862	TARGET-10	100	phs000218	TARGET-10-DCC002-09A-01R	acute lymphoblastic leukemia	TARGET	NA	NA	male	25512	16774	14553	13268	12330	11627
 TARGET-10-PAKHZT-03A-01R	40017860	18450874.13	55632774	47621057	TARGET-10	50	phs000218	TARGET-10-PAKHZT-03A-01R	acute lymphoblastic leukemia	TARGET	NA	NA	male	24598	15147	12826	11537	10579	9863
