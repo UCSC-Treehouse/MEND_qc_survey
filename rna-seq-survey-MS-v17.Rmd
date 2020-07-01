@@ -153,8 +153,20 @@ table(str_detect(counts_and_meta$disease, "leukemia"))
 
 library(ggthemes)
 
-cohort_size_histogram <- ggplot(counts_and_meta) + 
+old_cohort_size_histogram <- ggplot(counts_and_meta) + 
   geom_histogram(aes(n_in_cohort, group=cohort), fill = "lightgrey", color = "black") +
+  # theme_linedraw(base_size = 20) +
+  theme_minimal(base_size = 20) +
+  theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
+        axis.line.y = element_line(color="darkgrey", size = 0.5)) +  xlab("Cohort size") +
+  ylab("Datasets") + 
+  theme(legend.position="none")
+
+cohort_size_histogram <- ggplot(
+counts_and_meta %>%
+  select(cohort, n_in_cohort) %>%
+  distinct ) + 
+  geom_histogram(aes(n_in_cohort), fill = "lightgrey", color = "black") +
   # theme_linedraw(base_size = 20) +
   theme_minimal(base_size = 20) +
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
@@ -209,8 +221,17 @@ table(counts_and_meta$seq_length)
 summary(counts_and_meta$seq_length)
 IQR(counts_and_meta$seq_length, na.rm = TRUE)
 
- read_length_histogram <-  ggplot(counts_and_meta) + 
+ old_read_length_histogram <-  ggplot(counts_and_meta) + 
   geom_histogram(aes(seq_length, group=cohort), fill = "lightgrey", color = "black") +
+#  theme_linedraw(base_size = 20) +
+      theme_minimal(base_size = 20) +
+    theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
+        axis.line.y = element_line(color="darkgrey", size = 0.5)) +
+  xlab("Sequence length") +
+    ylab("Datasets")
+ 
+ read_length_histogram <-  ggplot(counts_and_meta) + 
+  geom_histogram(aes(seq_length), fill = "lightgrey", color = "black") +
 #  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
@@ -425,7 +446,7 @@ read_type_schematic_data <- matrix(c("Duplicate", 3, 4, 6, 7,
                        "MEND", 2.5, 3.5, 3, 4, 
                        "Non-exonic", 4.5, 5.5, 3, 4,
                        "Unmapped", 6, 7, 3, 4,
-                       "Gene", 2.5, 4, 1, 2,
+                       "Exon", 2.5, 4, 1, 2,
                        "Genome", 4.5, 5.5, 0.5, 1.5,
                        "Reads", 2.5, 2.5, 6, 7), 
                      ncol = length(plot1_colnames), byrow = TRUE,
@@ -435,11 +456,11 @@ read_type_schematic_data <- matrix(c("Duplicate", 3, 4, 6, 7,
   mutate(
     base_color = colors_for_read_types[match(label, names(colors_for_read_types))],
     border_color = case_when(
-      label %in% c("Reads", "Genome", "MEND", "Gene") ~ NA_character_,
+      label %in% c("Reads", "Genome", "MEND", "Exon") ~ NA_character_,
       TRUE ~ base_color),
-    fill_color = ifelse(label %in% c("MEND", "Gene"),  base_color, "white"),
+    fill_color = ifelse(label %in% c("MEND", "Exon"),  base_color, "white"),
     text_color = case_when(
-      label %in% c("MEND", "Gene")~  "white",
+      label %in% c("MEND", "Exon")~  "white",
       TRUE ~ base_color),
     mid_bar_x = map2_dbl(x1, x2,  function(x, y) mean(c(x,y))),
     mid_bar_y = map2_dbl(y1, y2,  function(x, y) mean(c(x,y)))
