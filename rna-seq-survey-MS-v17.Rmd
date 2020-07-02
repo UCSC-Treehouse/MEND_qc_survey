@@ -11,6 +11,8 @@ toc_depth: 3
 
 
 # Versions
+V18 - updated to survey_data.2020-07-02_11.01.36.txt
+
 V17 - Change sample to dataset; change project to cohort
 
 V16 - use namer on chunks
@@ -62,7 +64,7 @@ library(RColorBrewer)
 ```{r rna-seq-survey-MS-v16-2}
 
 inputs_dir <- "inputs"
-data_file <- "survey_data.2020-06-18_10.00.49.txt"
+data_file <- "survey_data.2020-07-02_11.50.01.txt"
 
 ```
 
@@ -201,17 +203,19 @@ old_cohort_size_histogram <- ggplot(counts_and_meta) +
   ylab("Cohorts") + 
   theme(legend.position="none")
 
-cohort_size_histogram <- ggplot(
-counts_and_meta %>%
+cohort_size_histogram <- ggplot(counts_and_meta %>%
   select(cohort, n_in_cohort) %>%
   distinct ) + 
   geom_histogram(aes(n_in_cohort), 
-                 fill = "lightgrey", color = "black", stat = StatBin2) +
+                 fill = "lightgrey", color = "black", stat = StatBin2,
+                 # binwidth = 10,
+                 breaks = seq(0,500, by=10)) +
   # theme_linedraw(base_size = 20) +
   theme_minimal(base_size = 20) +
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
-        axis.line.y = element_line(color="darkgrey", size = 0.5)) +  xlab("Cohort size") +
-  ylab("Cohorts") + 
+        axis.line.y = element_line(color="darkgrey", size = 0.5)) +  
+  xlab("Cohort size") +
+  scale_y_continuous("Cohorts", breaks = seq(0, 8, 2)) + 
   theme(legend.position="none")
 
 cohort_size_histogram
@@ -220,6 +224,12 @@ cohort_size_histogram
 
 n_distinct(counts_and_meta$cohort)
 sort(unique(counts_and_meta$n_in_cohort))
+
+counts_and_meta %>%
+  select(cohort, n_in_cohort) %>%
+  distinct %>%
+  arrange(desc(n_in_cohort)) %>%
+  kable
 
 counts_and_meta %>%
   select(cohort, n_in_cohort) %>%
@@ -273,13 +283,15 @@ IQR(counts_and_meta$seq_length, na.rm = TRUE)
  
  read_length_histogram <-  ggplot(counts_and_meta) + 
   geom_histogram(aes(seq_length), 
-                 fill = "lightgrey", color = "black", stat = StatBin2) +
+                 fill = "lightgrey", color = "black", stat = StatBin2,
+                 binwidth = 1) +
 #  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
   xlab("Sequence length") +
-    ylab("Datasets")
+    ylab("Datasets") +
+   expand_limits(x=0)
   
 read_length_histogram
 
@@ -483,17 +495,22 @@ colors_for_read_types <- c(colors_for_read_types,
                            "Reads" = "darkgrey")
 
 plot1_colnames <- c("label", "x1", "x2", "y1", "y2")
-read_type_schematic_data <- matrix(c("Duplicate", 3, 4, 6, 7,
-                       "Duplicate", 3, 4, 5, 6, 
+
+read_type_schematic_data_as_vector <- c("Duplicate", 3, 4, 5, 6, 
+                                     #"Duplicate", 3, 4, 6, 7,
                        "MEND", 3, 4, 4, 5, 
                        "MEND", 2.5, 3.5, 3, 4, 
                        "Non-exonic", 4.5, 5.5, 3, 4,
                        "Unmapped", 6, 7, 3, 4,
                        "Exon", 2.5, 4, 1, 2,
-                       "Genome", 4.5, 5.5, 0.5, 1.5,
-                       "Reads", 2.5, 2.5, 6, 7), 
+           #            "Genome", 4.5, 5.5, 0.5, 1.5,
+                       "Reads", 2.5, 2.5, 6, 7)
+
+rows_in_schematic <- length(read_type_schematic_data_as_vector)/length(plot1_colnames)
+
+read_type_schematic_data <- matrix(read_type_schematic_data_as_vector, 
                      ncol = length(plot1_colnames), byrow = TRUE,
-                     dimnames = list(c(1:9), plot1_colnames)) %>%
+                     dimnames = list(c(1:rows_in_schematic), plot1_colnames)) %>%
   as_tibble %>%
   type_convert() %>%
   mutate(
@@ -681,14 +698,32 @@ read_type_fractions_schematic
 
 figure_name <- "f1"
 
-plot_grid(cohort_size_histogram,
-read_type_schematic,
-read_length_histogram,
+# plot_grid(cohort_size_histogram,
+# read_type_schematic,
+# read_length_histogram,
+# read_type_fractions_schematic,
+#                  nrow=2,
+#                   labels = c("A", "C", "B", "D")) +
+#   draw_label(paste(figure_name, Sys.time()),
+#              x = 0, y = 0.02, hjust = 0, size = 6) 
+
+right_side <- plot_grid(read_type_schematic,
 read_type_fractions_schematic,
-                 nrow=2,
-                  labels = c("A", "C", "B", "D")) +
-  draw_label(paste(figure_name, Sys.time()),
-             x = 0, y = 0.02, hjust = 0, size = 6) 
+nrow=2,
+rel_heights = c(1, 2),
+labels = c("C", "D"))
+
+left_side <- plot_grid(cohort_size_histogram,
+read_length_histogram,
+nrow=2,
+labels = c("A", "B"))
+
+plot_grid(left_side,
+right_side,
+ncol = 2) +
+   draw_label(paste(figure_name, Sys.time()),
+              x = 0, y = 0.02, hjust = 0, size = 6) 
+
 ```
 
 
@@ -1406,3 +1441,5 @@ round(cor_tot_reads_and_dupes^2, 2)
 
 
 ```
+
+

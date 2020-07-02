@@ -1,0 +1,70 @@
+---
+title: "`r gsub('.Rmd', ' ', gsub('_', ' ', knitr::current_input()))`"
+author: "`r Sys.getenv('USER')`"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: yes
+---
+  
+# Versions
+V2 - check project sizes and use pubs only where needed?
+
+
+```{r setup, include = FALSE}
+
+library(tidyverse)
+library(janitor)
+library(knitr)
+
+```
+
+
+# Load proj
+```{r}
+curated_proj_desc <- read_tsv("curated_project_descriptions_internal.tsv")
+
+```
+
+```{r}
+
+inputs_dir <- "inputs"
+data_file <- "survey_data.2020-06-18_10.00.49.txt"
+
+counts_and_meta <- read_tsv(file.path(inputs_dir, data_file)) %>%
+  group_by(cohort) %>%
+  mutate(n_in_cohort = n())
+```
+```{r}
+
+counts_and_meta2 <- counts_and_meta %>%
+select(dataset_id, sample_prefix, source_accession, disease, cohort, n_in_cohort) %>%
+  mutate(sample_prefix2 = ifelse(grepl("TARGET", dataset_id), 
+                                 gsub("(^TARGET-[0-9][0-9]).*$", "\\1", dataset_id),
+                                 sample_prefix)) %>%
+  left_join(curated_proj_desc, by=c("sample_prefix"="project_id"))
+
+counts_and_meta2 %>%
+  tabyl(sample_prefix2)
+
+most_common_val_w_percent <- function(value_vector = c("a", "a", "b")){
+  mc_vals <- tabyl(value_vector) %>%
+    arrange(desc(n)) %>%
+    top_n(1, n) 
+  paste0(round(100*mc_vals$percent), "% ", mc_vals$value_vector)
+  }
+
+counts_and_meta2 %>%
+  group_by(cohort, n_in_cohort) %>%
+  summarize(project_descriptions = paste(unique(project_description), collapse = ", "),
+            sample_prefixes = paste(unique(sample_prefix), collapse = ", "),
+            most_common_disease = most_common_val_w_percent(disease)
+            ) %>% 
+  arrange(sample_prefixes) %>%
+  kable
+  
+
+
+
+```
+
