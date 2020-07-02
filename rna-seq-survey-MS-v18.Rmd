@@ -2,11 +2,10 @@
 title: "`r gsub('.Rmd', ' ', gsub('_', ' ', knitr::current_input()))`"
 author: "`r Sys.getenv('USER')`"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: 
+output:
   html_document:
-  toc: true
-toc_depth: 3
-
+    toc: true
+    toc_float: true
 ---
 
 
@@ -57,6 +56,7 @@ library(ggthemes) # for theme_linedraw()
 library(ggpubr) # for stat_cor
 library(cowplot) # for ggdraw and draw_label
 library(RColorBrewer)
+library(pander)
 
 ```
 
@@ -1290,4 +1290,8 @@ round(cor_tot_reads_and_dupes^2, 2)
 
 ```
 
+# SessionInfo
+```{r}
+pander(sessionInfo(), compact = FALSE)
+```
 
