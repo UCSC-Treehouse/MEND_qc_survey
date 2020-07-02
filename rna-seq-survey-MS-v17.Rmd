@@ -473,7 +473,7 @@ ggplot(this_data,
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
   ggtitle(this_plot_title)  + 
-  theme(legend.position="none") +
+  theme(legend.position="none", plot.title=element_text(size=22)) +
   xlab("Read counts (million)") +
   ylab("% Duplicates")
 
@@ -575,7 +575,8 @@ comparison_of_remaining <- read_type_fractions_long %>%
     median = round(1-median(dataset_value), 2),
     p25 = round(1-quantile(dataset_value, 0.25), 2),
     p75 = round(1-quantile(dataset_value, 0.75), 2)) %>%
-  mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x=", 100*median, "%)"))
+      mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x͂=",100* median, "%)"))
+#  mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x=", 100*median, "%)"))
 
 positive_bars <- comparison_of_remaining %>%
   select(-min, -max, -p25, -p75) %>%
@@ -610,7 +611,7 @@ MEND_stats_of_total <- counts_and_meta  %>%
 
 MEND_bar <- tibble(read_type_fraction_name = "MEND reads",
                     read_type_fraction_label = read_type_fraction_name,
-                    bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x=", 100*median, "%)")),
+                    bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x͂=",100* median, "%)")),
                     abs_median = 1,
                     position = "1",
                     #category_space = 1
