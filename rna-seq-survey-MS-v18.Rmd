@@ -648,7 +648,7 @@ all_bars_rel <- left_join(all_bars, cat_space, by = "read_type_fraction_name") %
 #         border_color_val = ifelse(position ==1, NA, bar_color),
          border_color_val = bar_color,
          text_color = ifelse(position ==1, "white", "black"),
-font_size = ifelse(position ==1, 3.5,3),
+font_size = ifelse(abs_median<0.1, 3,3.5),
 text_angle = ifelse(abs_median<0.1, 90,0)
          ) 
 
