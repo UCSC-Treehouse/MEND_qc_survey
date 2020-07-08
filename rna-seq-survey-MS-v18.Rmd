@@ -648,6 +648,8 @@ all_bars_rel <- left_join(all_bars, cat_space, by = "read_type_fraction_name") %
 #         border_color_val = ifelse(position ==1, NA, bar_color),
          border_color_val = bar_color,
          text_color = ifelse(position ==1, "white", "black"),
+font_size = ifelse(abs_median<0.1, 3,3.5),
+text_angle = ifelse(abs_median<0.1, 90,0)
          ) 
 
 ```
@@ -660,13 +662,16 @@ read_type_fractions_schematic <- ggplot(all_bars_rel, aes(y=read_type_fraction_n
                 color = border_color_val
                 )) +
    geom_text(aes(label=bar_label,
-                 color = text_color), 
+                 color = text_color,
+                 size = font_size,
+                 angle= text_angle), 
              position = position_stack(vjust = .5),
 #             size = 4.5,
-             size = 3.5,
+             #size = 3.5,
               fontface = "bold") +
    scale_fill_identity() +
    scale_color_identity()  +
+  scale_size_identity() + 
    theme_void() +
   theme(axis.title.y=element_blank(),
         axis.text.y=element_blank(),
@@ -679,16 +684,19 @@ ggplot(all_bars_rel, aes(y=read_type_fraction_name,
                 color = border_color_val
                 )) +
    geom_text(aes(label=read_type_fraction_label,
-                 color = text_color), 
+                 color = text_color,
+                 size = font_size,
+                 angle = text_angle), 
              position = position_stack(vjust = .5),
-             size = 4.5,
+             #size = 4.5,
               fontface = "bold") +
    scale_fill_identity() +
    scale_color_identity()  +
+  scale_size_identity() + 
    theme_void() +
   theme(axis.title.y=element_blank(),
         axis.text.y=element_blank(),
-        axis.ticks.y=element_blank()) 
+        axis.ticks.y=element_blank())
  
 
 read_type_fractions_schematic
