@@ -198,7 +198,6 @@ library(ggthemes)
 old_cohort_size_histogram <- ggplot(counts_and_meta) + 
   geom_histogram(aes(n_in_cohort, group=cohort), 
                  fill = "lightgrey", color = "black", stat = StatBin2) +
-  # theme_linedraw(base_size = 20) +
   theme_minimal(base_size = 20) +
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +  xlab("Cohort size") +
@@ -210,9 +209,7 @@ cohort_size_histogram <- ggplot(counts_and_meta %>%
   distinct ) + 
   geom_histogram(aes(n_in_cohort), 
                  fill = "lightgrey", color = "black", stat = StatBin2,
-                 # binwidth = 10,
                  breaks = seq(0,500, by=10)) +
-  # theme_linedraw(base_size = 20) +
   theme_minimal(base_size = 20) +
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +  
@@ -276,7 +273,6 @@ IQR(counts_and_meta$seq_length, na.rm = TRUE)
  old_read_length_histogram <-  ggplot(counts_and_meta) + 
   geom_histogram(aes(seq_length, group=cohort), 
                  fill = "lightgrey", color = "black", stat = StatBin2) +
-#  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
@@ -287,7 +283,6 @@ IQR(counts_and_meta$seq_length, na.rm = TRUE)
   geom_histogram(aes(seq_length), 
                  fill = "lightgrey", color = "black", stat = StatBin2,
                  binwidth = 1) +
-#  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
@@ -328,7 +323,6 @@ kable(Total_read_counts %>%
 total_read_count_histogram <-  ggplot(counts_and_meta) + 
   geom_histogram(aes(Total_reads/1E6), 
                  fill = "lightgrey", color = "black", stat = StatBin2) +
-#  theme_linedraw(base_size = 20) +
       theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
@@ -352,7 +346,6 @@ total_read_count_histogram
   )
 
 read_type_fractions_long <- read_counts_with_read_type_fractions %>%
-#  select(c(dataset_id, cohort_id, cohort, starts_with("pct_"))) %>%
   pivot_longer(cols = starts_with("pct_"), names_to = "read_type_fraction_name", values_to = "dataset_value") 
 
 
@@ -444,14 +437,6 @@ round(cor_tot_reads_and_dupes^2, 2)
 ## more exploration
 ```{r rna-seq-survey-MS-v16-20}
 
-# p <- ggplot(read_counts_with_read_type_fractions, aes(x=Total_reads/1e6, y=pct_dupe_of_mapped)) + 
-#   geom_point() + 
-#   geom_smooth(method=lm, se=FALSE)
-# 
-# # Add correlation coefficient
-# p + stat_cor(method = "pearson") #, label.x = 250 * 1e6, label.y = 0.2)
-# 0.64^2   
-
 this_data <- read_counts_with_read_type_fractions %>%
   select(Total_reads, pct_dupe_of_mapped)
 
@@ -499,13 +484,11 @@ colors_for_read_types <- c(colors_for_read_types,
 plot1_colnames <- c("label", "x1", "x2", "y1", "y2")
 
 read_type_schematic_data_as_vector <- c("Duplicate", 3, 4, 5, 6, 
-                                     #"Duplicate", 3, 4, 6, 7,
                        "MEND", 3, 4, 4, 5, 
                        "MEND", 2.5, 3.5, 3, 4, 
                        "Non-exonic", 4.5, 5.5, 3, 4,
                        "Unmapped", 6, 7, 3, 4,
                        "Exon", 2.5, 4, 1, 2,
-           #            "Genome", 4.5, 5.5, 0.5, 1.5,
                        "Aligned reads", 2.7, 2.7, 6, 7)
 
 rows_in_schematic <- length(read_type_schematic_data_as_vector)/length(plot1_colnames)
@@ -552,11 +535,9 @@ read_type_schematic <- ggplot(read_type_schematic_data,
   theme_void() + 
   theme(
     panel.grid.major.x = element_line(color="lightgrey", size=0.2),
-    #panel.grid.minor.x = element_line(color="lightgrey", size=0.2)
     ) + 
  scale_x_continuous(
    breaks = seq(min(read_type_schematic_data$x1) - padding_size + 0.25, end_of_box , 0.25))
-#   minor_breaks = seq(4, 10, 0.25))
 
 read_type_schematic
 
@@ -565,11 +546,9 @@ read_type_schematic
 # Generate schematic defining read type fractions
 ```{r rna-seq-survey-MS-v16-22}
 stat_names <- c("pct_unmapped_of_total",  "pct_dupe_of_mapped", "pct_non_exonic_of_non_dupe")
-# complement_stat_names <- c("pct_mapped_of_total",  "pct_nondupe_of_mapped", "pct_exonic_of_non_dupe") 
 stat_labels <- c("Unmapped",  "Duplicate", "Non-exonic") 
 complement_stat_names <- c("Mapped reads",  "Non-duplicate reads", "Exonic reads") 
 divisor_name = c("total", "mapped", "non-duplicate")
-# names(divisor_name) = 
 
 comparison_of_remaining <- read_type_fractions_long %>% 
   mutate(read_type_fraction_name = complement_stat_names[match(read_type_fraction_name, stat_names)]) %>%
@@ -580,7 +559,6 @@ comparison_of_remaining <- read_type_fractions_long %>%
     p25 = round(1-quantile(dataset_value, 0.25), 2),
     p75 = round(1-quantile(dataset_value, 0.75), 2)) %>%
       mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x͂=",100* median, "%)"))
-#  mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x=", 100*median, "%)"))
 
 positive_bars <- comparison_of_remaining %>%
   select(-min, -max, -p25, -p75) %>%
@@ -598,8 +576,7 @@ total_bar <- tibble(read_type_fraction_name = "Total reads",
                     read_type_fraction_label = read_type_fraction_name,
                     bar_label = "Total reads\n(100% of reads)",
                     abs_median = 1,
-                    position = "1",
-                    #category_space = 1
+                    position = "1"
                     )
 
 
@@ -617,8 +594,7 @@ MEND_bar <- tibble(read_type_fraction_name = "MEND reads",
                     read_type_fraction_label = read_type_fraction_name,
                     bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x͂=",100* median, "%)")),
                     abs_median = 1,
-                    position = "1",
-                    #category_space = 1
+                    position = "1"
                     )
 
 bar_names_in_order <- c("Total reads", "Mapped reads", "Non-duplicate reads", "Exonic reads", "MEND reads")
@@ -649,7 +625,6 @@ all_bars_rel <- left_join(all_bars, cat_space, by = "read_type_fraction_name") %
          position = factor(position, levels = rev(sort(unique(position)))),
          bar_color = these_colors_with_MEND[match(read_type_fraction_name, names(these_colors_with_MEND))],
          fill_val = ifelse(position == 1, bar_color, NA),
-#         border_color_val = ifelse(position ==1, NA, bar_color),
          border_color_val = bar_color,
          text_color = ifelse(position ==1, "white", "black"),
 font_size = ifelse(abs_median<0.1, 3,3.5),
@@ -670,8 +645,6 @@ read_type_fractions_schematic <- ggplot(all_bars_rel, aes(y=read_type_fraction_n
                  size = font_size,
                  angle= text_angle), 
              position = position_stack(vjust = .5),
-#             size = 4.5,
-             #size = 3.5,
               fontface = "bold") +
    scale_fill_identity() +
    scale_color_identity()  +
@@ -692,7 +665,6 @@ ggplot(all_bars_rel, aes(y=read_type_fraction_name,
                  size = font_size,
                  angle = text_angle), 
              position = position_stack(vjust = .5),
-             #size = 4.5,
               fontface = "bold") +
    scale_fill_identity() +
    scale_color_identity()  +
@@ -710,15 +682,6 @@ read_type_fractions_schematic
 ```{r rna-seq-survey-MS-v16-24, fig.height=6, fig.width=10}
 
 figure_name <- "f1"
-
-# plot_grid(cohort_size_histogram,
-# read_type_schematic,
-# read_length_histogram,
-# read_type_fractions_schematic,
-#                  nrow=2,
-#                   labels = c("A", "C", "B", "D")) +
-#   draw_label(paste(figure_name, Sys.time()),
-#              x = 0, y = 0.02, hjust = 0, size = 6) 
 
 right_side <- plot_grid(read_type_schematic,
 read_type_fractions_schematic,
@@ -767,10 +730,8 @@ read_type_fractions_long_for_histogram <- read_type_fractions_long %>%
                                           levels = stat_names))
 
 read_type_fractions_histogram <-  ggplot(read_type_fractions_long_for_histogram) +
-  # geom_histogram(aes(x = dataset_value, fill = read_type_fraction_name))  +
     geom_histogram(aes(x = dataset_value, color = read_type_fraction_name), 
                    fill = "white", stat = StatBin2)  +
-  # scale_fill_brewer(palette = "Set1") +
   scale_color_manual(values = colors_for_stat_names) +
   facet_wrap(~read_type_fraction_name, 
              nrow = 1, 
@@ -782,12 +743,9 @@ read_type_fractions_histogram <-  ggplot(read_type_fractions_long_for_histogram)
   ylab("Datasets") +
   xlab(paste0("Read type percentages in ", length(unique(read_type_fractions_long_for_histogram$dataset_id)),  " datasets")) +
   scale_x_continuous(breaks = seq(0, 1, by = 0.5)) +
-  #  expand_limits(x = c(-0.25, 0.9)) +
-#  ggtitle(plot_title) +
     theme_minimal() +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
-#  theme_linedraw(base_size = 20) +
     theme(strip.text.x = element_text(size = 12, face = "bold")) +
     theme(legend.position = "none")
 
@@ -872,24 +830,6 @@ read_type_fractions_per_cohort_boxplot
 
 ```
 
-```{r rna-seq-survey-MS-v16-30, fig.height=8, fig.width=7}
-# 
-# f2ab <- plot_grid(read_type_fractions_histogram +
-#             theme(strip.text.x = element_text(size = 10, face = "bold"),
-#                   axis.title.x=element_blank(),
-#                   axis.text.x=element_blank()),
-#           read_type_fractions_per_cohort_boxplot +
-#             theme(strip.text.x = element_blank(),
-#                   strip.background = element_blank(),
-#                   strip.text = element_blank()),
-#           ncol = 1,
-#           rel_heights = c(1.5, 6),
-#           labels = "AUTO",
-#           align = "v")
-
-
-```
-
 
 # Characterize EGAD00001003279
 
@@ -947,9 +887,6 @@ read_counts_with_read_type_fractions %>%
    ungroup %>%
    mutate(read_type_name = factor(read_type_name, levels = read_type_names))
 
-# read_label <- c("% unmapped", "% duplicate \n(of mapped)", "% non-exonic \n(of non-duplicate)")
-# names(read_label) <- read_type_names
-
 counts_and_meta_long_one_proj <-  counts_and_meta_long %>%
   filter(cohort == this_cohort)
 
@@ -1004,7 +941,6 @@ ggplot(counts_and_meta %>%
     theme_minimal(base_size = 20) +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
-  # scale_color_gradientn() +
   scale_fill_gradientn(colours = c(bl,"white", re)) +
   ggtitle(paste("Relationship of dupe fraction to MEND count in", this_cohort), "For detecting whether datasets with less info were sequenced more deeply. \nNormally, higher depth datasets have more MEND reads and more duplicate \nreads than the same dataset sequenced at a lower total depth.")
 
@@ -1250,7 +1186,6 @@ cor_plots_excluding_high_read_depth_and_low_gene_count_datasets <- ggplot(this_d
         strip.text = element_text(face = "bold")) +
   scale_color_manual(values = colors_for_correlation_plot) +
   facet_grid(Read_type~Expression_threshold) +
-#  ggtitle(this_plot_title)  + 
   theme(legend.position="none") +
   scale_x_continuous("Read counts (million)", n.breaks = 4) +
   ylab("Gene counts (thousand)") 
@@ -1317,9 +1252,6 @@ round(cor_tot_reads_and_dupes^2, 2)
 
 
 ```
-
-
-
 
 # SessionInfo
 ```{r}
