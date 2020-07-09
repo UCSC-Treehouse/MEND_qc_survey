@@ -1013,20 +1013,36 @@ counts_and_meta_long_one_proj %>%
 
 # Expressed genes
 
-## Distibutions of expressed gene counts
+## What is the distribution of measured genes?
 ```{r rna-seq-survey-MS-v16-35}
-expressed_gene_counts_long <- counts_and_meta %>% 
-  pivot_longer(starts_with("genes_expressed_above")) %>%
-  mutate(min_gene_expr_tpm = gsub("genes_expressed_above_", "", name))
+
+gene_counts_long <- counts_and_meta %>%
+  pivot_longer(cols = starts_with("genes_"), names_to = "Expression_threshold")  %>%
+  mutate(Expression_threshold = paste(str_replace(Expression_threshold, "genes_expressed_above_", "genes > "), "TPM"))  
 
 
-ggplot (expressed_gene_counts_long) +
-  geom_histogram(aes(x=value), stat = StatBin2) +
-  facet_wrap(~name) 
+ggplot(gene_counts_long) + 
+  geom_histogram(aes(x=value/1e3, fill = Expression_threshold), stat = StatBin) +
+  facet_wrap(~Expression_threshold)  +
+    theme_minimal() +
+  scale_fill_brewer(palette = "Set1") +
+    theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
+        axis.line.y = element_line(color="darkgrey", size = 0.5)) +
+#  theme_linedraw(base_size = 20) +
+    theme(legend.position = "none") +
+  # scale_fill_brewer(palette = "Set1") +
+  ylab("Datasets") +
+  xlab("Measured genes") 
+  
+```
+
+# What are the exact lowest numbers?
+```{r}
 
 sort(counts_and_meta$genes_expressed_above_0) [1:100]
 
 ```
+
 
 ## correlations with all datasets
 ```{r rna-seq-survey-MS-v16-36}
@@ -1103,7 +1119,7 @@ datasets_with_outlier_depths <- counts_and_meta %>%
 plot_gene_count_correlations <- function(this_data = expr_gene_and_read_counts_to_plot, this_plot_title = "gene count correlations"){
 
 this_data <- this_data %>% 
-  mutate(Expression_threshold = str_replace(Expression_threshold, "genes_expressed_above_", "genes above "))  
+  mutate(Expression_threshold = paste(str_replace(Expression_threshold, "genes_expressed_above_", "genes > "), "TPM"))  
   
   
 these_stats <- this_data  %>%
@@ -1201,7 +1217,7 @@ this_data <- expr_gene_and_read_counts_to_plot %>%
        ! dataset_id %in% exclude_for_depth, 
         ! dataset_id %in% exclude_for_gene_count
       ) %>%
-  mutate(Expression_threshold = str_replace(Expression_threshold, "genes_expressed_above_", "genes above "))
+  mutate(Expression_threshold = paste(str_replace(Expression_threshold, "genes_expressed_above_", "genes > "), "TPM"))  
 
 n_distinct(this_data$dataset_id)
 
@@ -1297,6 +1313,9 @@ round(cor_tot_reads_and_dupes^2, 2)
 
 
 ```
+
+
+
 
 # SessionInfo
 ```{r}
