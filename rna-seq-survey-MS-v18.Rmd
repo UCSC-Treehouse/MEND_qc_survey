@@ -492,7 +492,7 @@ names(colors_for_read_types) <- gsub(" reads", "", names(these_colors_with_MEND)
 colors_for_read_types <- c(colors_for_read_types, 
                            "Genome" = "darkblue",
                            "Exon" = "darkblue",
-                           "Reads" = "darkgrey")
+                           "Aligned reads" = "darkgrey")
 
 plot1_colnames <- c("label", "x1", "x2", "y1", "y2")
 
@@ -504,7 +504,7 @@ read_type_schematic_data_as_vector <- c("Duplicate", 3, 4, 5, 6,
                        "Unmapped", 6, 7, 3, 4,
                        "Exon", 2.5, 4, 1, 2,
            #            "Genome", 4.5, 5.5, 0.5, 1.5,
-                       "Reads", 2.5, 2.5, 6, 7)
+                       "Aligned reads", 2.7, 2.7, 6, 7)
 
 rows_in_schematic <- length(read_type_schematic_data_as_vector)/length(plot1_colnames)
 
@@ -516,7 +516,7 @@ read_type_schematic_data <- matrix(read_type_schematic_data_as_vector,
   mutate(
     base_color = colors_for_read_types[match(label, names(colors_for_read_types))],
     border_color = case_when(
-      label %in% c("Reads", "Genome", "MEND", "Exon") ~ NA_character_,
+      label %in% c("Aligned reads", "Genome", "MEND", "Exon") ~ NA_character_,
       TRUE ~ base_color),
     fill_color = ifelse(label %in% c("MEND", "Exon"),  base_color, "white"),
     text_color = case_when(
@@ -529,10 +529,12 @@ read_type_schematic_data <- matrix(read_type_schematic_data_as_vector,
 
 
 padding_size = 0.35
+end_of_box <- sort(read_type_schematic_data$x2,partial=length(read_type_schematic_data$x2)-1)[length(read_type_schematic_data$x2)-1] + padding_size
 read_type_schematic <- ggplot(read_type_schematic_data, 
                               aes(xmin=x1, xmax=x2, ymin=y1, ymax = y2, 
                                   fill = fill_color, color = border_color)) +
   geom_rect() +
+  
   geom_segment(x=min(read_type_schematic_data$x1-padding_size), y=1.5, xend = 5.75, yend = 1.5, color = "darkblue") +   
   geom_text(aes(label = label, x = mid_bar_x, y=mid_bar_y,
                 color = text_color), 
@@ -540,7 +542,7 @@ read_type_schematic <- ggplot(read_type_schematic_data,
             fontface = "bold") +
   geom_rect(aes(xmin = min(x1 - padding_size), 
                 ymin = 2.5, 
-                xmax = max(x2 + padding_size),
+                xmax = end_of_box,
                 ymax=max(y2 + padding_size)), 
             fill = NA, color = "darkgrey", size = 0.25) +
   scale_fill_identity() +
@@ -551,7 +553,7 @@ read_type_schematic <- ggplot(read_type_schematic_data,
     #panel.grid.minor.x = element_line(color="lightgrey", size=0.2)
     ) + 
  scale_x_continuous(
-   breaks = seq(min(read_type_schematic_data$x1) - padding_size + 0.25, max(read_type_schematic_data$x2 + padding_size), 0.25))
+   breaks = seq(min(read_type_schematic_data$x1) - padding_size + 0.25, end_of_box , 0.25))
 #   minor_breaks = seq(4, 10, 0.25))
 
 read_type_schematic
