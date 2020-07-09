@@ -506,7 +506,7 @@ read_type_schematic_data_as_vector <- c("Duplicate", 3, 4, 5, 6,
                        "Unmapped", 6, 7, 3, 4,
                        "Exon", 2.5, 4, 1, 2,
            #            "Genome", 4.5, 5.5, 0.5, 1.5,
-                       "Aligned reads", 2.7, 2.7, 6, 7)
+                       "Aligned reads", 2.8, 2.8, 6.5, 7)
 
 rows_in_schematic <- length(read_type_schematic_data_as_vector)/length(plot1_colnames)
 
