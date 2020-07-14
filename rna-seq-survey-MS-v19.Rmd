@@ -59,6 +59,7 @@ library(ggpubr) # for stat_cor
 library(cowplot) # for ggdraw and draw_label
 library(RColorBrewer)
 library(pander)
+library(kableExtra)
 
 ```
 
@@ -182,7 +183,8 @@ colnames(disease_freq_table)[1]="Disease"
 write_tsv(disease_freq_table, "results/disease_freq_table.txt")
 
 disease_freq_table  %>%
-  kable
+  kable %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 
 # many are leukemias
 table(str_detect(counts_and_meta$disease, "leukemia"))
