@@ -10,7 +10,7 @@ output:
 
 
 # Versions
-V19 - updated to survey_data.2020-07-08_17.17.10.txt
+V19 - updated to survey_data.2020-07-08_17.17.10.txt, then survey_data.2020-07-14_11.31.11.txt
 
 V18 - updated to survey_data.2020-07-02_11.01.36.txt
 
@@ -67,7 +67,12 @@ library(kableExtra)
 ```{r rna-seq-survey-MS-v16-2}
 
 inputs_dir <- "inputs"
-data_file <- "survey_data.2020-07-02_11.50.01.txt"
+data_file <- tibble(files = list.files(inputs_dir)) %>%
+  arrange(desc(files)) %>%
+  top_n(1, wt = files) %>%
+  pull(files)
+
+print(data_file)
 
 ```
 
@@ -86,6 +91,13 @@ is_outlier <- function(x) {
     (x < quantile(x, 0.25) - 1.5*IQR(x))
 }
 
+
+most_common_val_w_percent <- function(value_vector = c("a", "a", "b")){
+  mc_vals <- tabyl(value_vector) %>%
+    arrange(desc(n)) %>%
+    top_n(1, n) 
+  paste0(round(100*mc_vals$percent), "% ", mc_vals$value_vector)
+}
 
 # StatBin2 allows depiction of empty bins as blank instead of a horizontal line:
 # https://stackoverflow.com/questions/57128090/remove-baseline-color-for-geom-histogram
@@ -129,7 +141,21 @@ StatBin2 <- ggproto(
 # Import data
 ```{r rna-seq-survey-MS-v16-5}
 
-counts_and_meta <- read_tsv(file.path(inputs_dir, data_file)) %>%
+col_spec <- cols(
+  .default = col_double(),
+  dataset_id = col_character(),
+  disease = col_character(),
+  dataset_prefix = col_character(),
+  pedaya = col_character(),
+  gender = col_character(),
+  doi_link = col_character(),
+  source_accession = col_character(),
+  repo = col_character(),
+  original_dataset_id = col_character(),
+  cohort = col_character()
+)
+
+counts_and_meta <- read_tsv(file.path(inputs_dir, data_file), col_types = col_spec) %>%
   group_by(cohort) %>%
   mutate(n_in_cohort = n())
 
@@ -148,8 +174,6 @@ these_colors <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1
 
 these_colors <- c("#1F78B4", "#1F78B4", "#33A02C", "#33A02C", "#E31A1C", "#E31A1C", 
 "#FF7F00", "#FF7F00")
-
-
 
 names(these_colors) <-  c("not assigned", "Total reads", "Non-exonic reads",  "Exonic reads", "Duplicate reads",  "Non-duplicate reads",  "Unmapped reads", "Mapped reads")
 
@@ -248,7 +272,10 @@ counts_and_meta %>%
 table(counts_and_meta$pedaya, useNA = "always")
 table(subset(counts_and_meta, is.na(pedaya))$dataset_prefix)
 
-n_ped_aya <- sum(counts_and_meta$pedaya=="Yes, age < 30 years" | grepl("TARGET", counts_and_meta$dataset_prefix), na.rm = TRUE)
+# n_ped_aya <- sum(counts_and_meta$pedaya=="Yes, age < 30 years" | grepl("TARGET", counts_and_meta$dataset_prefix), na.rm = TRUE)
+# at least one target sample is >30
+
+n_ped_aya <- sum(counts_and_meta$pedaya=="Yes, age < 30 years" | counts_and_meta$age_at_dx<30, na.rm = TRUE)
 n_ped_aya
 n_ped_aya/nrow(counts_and_meta)
 # more than 95% of which are pediatric <30; of the Datasets with specific ages at diagnosis reported, the median was 7
@@ -491,7 +518,7 @@ read_type_schematic_data_as_vector <- c("Duplicate", 3, 4, 5, 6,
                        "Non-exonic", 4.5, 5.5, 3, 4,
                        "Unmapped", 6, 7, 3, 4,
                        "Exon", 2.5, 4, 1, 2,
-                       "Aligned reads", 2.7, 2.7, 6, 7)
+                       "Aligned reads", 2.8, 2.8, 6, 7)
 
 rows_in_schematic <- length(read_type_schematic_data_as_vector)/length(plot1_colnames)
 
