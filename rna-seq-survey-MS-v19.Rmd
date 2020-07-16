@@ -67,10 +67,7 @@ library(kableExtra)
 ```{r rna-seq-survey-MS-v19-2 }
 
 inputs_dir <- "inputs"
-data_file <- tibble(files = list.files(inputs_dir)) %>%
-  arrange(desc(files)) %>%
-  top_n(1, wt = files) %>%
-  pull(files)
+data_file <- "survey_data.2020-07-14_17.57.12.txt"
 
 print(data_file)
 
