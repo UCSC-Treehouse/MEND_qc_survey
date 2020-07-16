@@ -1,0 +1,6 @@
+repo_name	repo_abbrev	repo_url	source_accession_pattern
+Short Read Archive	SRA	https://www.ncbi.nlm.nih.gov/sra	^SRP
+European Genome-phenome Archive	EGA	https://www.ebi.ac.uk/ega/home	^EGA
+St. Jude Cloud	SJC	https://www.stjude.cloud/	Pediatric Cancer Genome Project (PCGP)
+Kids First Data Portal	KFDP	https://portal.kidsfirstdrc.org/	^CBTTC
+Database of Genotypes and Phenotypes	dbGaP	https://www.ncbi.nlm.nih.gov/gap/	^phs

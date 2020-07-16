@@ -145,14 +145,13 @@ col_spec <- cols(
   .default = col_double(),
   dataset_id = col_character(),
   disease = col_character(),
-  dataset_prefix = col_character(),
   pedaya = col_character(),
   gender = col_character(),
+  cohort = col_character(),
   doi_link = col_character(),
-  source_accession = col_character(),
-  repo = col_character(),
-  original_dataset_id = col_character(),
-  cohort = col_character()
+  source_repository = col_character(),
+  repository_cohort_accession = col_character(),
+  repository_dataset_accession = col_character()
 )
 
 counts_and_meta <- read_tsv(file.path(inputs_dir, data_file), col_types = col_spec) %>%
@@ -264,6 +263,31 @@ counts_and_meta %>%
 
 ```
 
+# repository supp table
+```{r}
+
+repo_info <- read_tsv("inputs/repos.tsv")
+
+repo_info %>%
+  rename(`Name`=repo_name, `Abbreviation`=repo_abbrev, URL = repo_url) %>%
+  select(-source_accession_pattern) %>%
+  kable %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+```
+
+# data access table
+```{r}
+counts_and_meta %>% 
+  select(cohort, doi_link, source_repository, repository_cohort_accession) %>%
+#  group_by(across(c(-disease)))
+  distinct %>%
+  kable
+```
+
+
+
+
 # Genders in dataset
 
 ```{r rna-seq-survey-MS-v19-10 }
@@ -289,9 +313,7 @@ counts_and_meta %>%
 
 
 table(counts_and_meta$pedaya, useNA = "always")
-table(subset(counts_and_meta, is.na(pedaya))$dataset_prefix)
 
-# n_ped_aya <- sum(counts_and_meta$pedaya=="Yes, age < 30 years" | grepl("TARGET", counts_and_meta$dataset_prefix), na.rm = TRUE)
 # at least one target sample is >30
 
 n_ped_aya <- sum(counts_and_meta$pedaya=="Yes, age < 30 years" | counts_and_meta$age_at_dx<30, na.rm = TRUE)
@@ -840,6 +862,26 @@ MEND_pct <- read_counts_with_MEND_fractions %>%
 kable(MEND_pct %>%
         select(-variance, -p25, -p75) %>%
       mutate_if(is.double, ~100*.), digits = 0)
+
+
+head(sort(read_counts_with_MEND_fractions$pct_MEND_of_total))
+
+sum(read_counts_with_MEND_fractions$pct_MEND_of_total<0.25)
+
+read_counts_with_MEND_fractions %>%
+  ungroup %>%
+  mutate(pct_under_25 = pct_MEND_of_total<0.25) %>%
+  tabyl(pct_under_25) %>%
+  adorn_totals()
+
+
+read_counts_with_MEND_fractions %>%
+  ungroup %>%
+  filter(Mapped > 30E6) %>%
+  mutate(pct_under_25 = pct_MEND_of_total<0.25) %>%
+  tabyl(pct_under_25) %>%
+  adorn_totals()
+
 
 
 ```
