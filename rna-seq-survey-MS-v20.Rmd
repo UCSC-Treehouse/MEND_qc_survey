@@ -279,13 +279,14 @@ repo_info %>%
 
 ```
 
-# data access table
+# Table S3 - data access table
 ```{r}
 counts_and_meta %>% 
-  select(cohort_code, cohort_name, doi_link, source_repository, repository_cohort_accession) %>%
+  select(cohort_code, cohort_name, source_repository, repository_cohort_accession) %>% # removed DOI link
 #  group_by(across(c(-disease)))
   distinct %>%
-  kable
+  kable %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
 
@@ -515,7 +516,7 @@ round(cor_tot_reads_and_dupes^2, 2)
 
 
 ```
-
+# Figure S1
 ## Plot correlation of depth of sequencing to duplicate read fraction
 ```{r rna-seq-survey-MS-v19-22 }
 
@@ -528,7 +529,7 @@ these_stats <- this_data  %>%
   ungroup %>%
   summarize(r_corr = round(cor(Total_reads, pct_dupe_of_mapped), 2))
 
-ggplot(this_data,
+fs1 <- ggplot(this_data,
        aes(x=Total_reads/1E6, y=pct_dupe_of_mapped)) + 
   geom_point(alpha = 0.5, shape = 20, size =0.1) +
   geom_smooth(method = "lm", color = "black", se = FALSE) +
@@ -547,6 +548,7 @@ ggplot(this_data,
   ylab("% Duplicates")
 
 
+ggsave("Figure_S1.png", fs1 + ggtitle(""))
 
 ```
 
@@ -715,7 +717,7 @@ text_angle = ifelse(abs_median<0.1, 90,0)
 
 ```
 
-
+# read_type_fractions_schematic
 ```{r rna-seq-survey-MS-v19-25, fig.height=4, fig.width=8}
 read_type_fractions_schematic <- ggplot(all_bars_rel, aes(y=read_type_fraction_name,
                 x=rel_median, group = position)) + 
@@ -761,6 +763,7 @@ read_type_fractions_schematic
 
 ```
 
+# Figure 1
 ```{r rna-seq-survey-MS-v19-26, fig.height=6, fig.width=10}
 
 figure_name <- "f1"
@@ -776,11 +779,14 @@ read_length_histogram,
 nrow=2,
 labels = c("A", "B"))
 
-plot_grid(left_side,
+f1 <- plot_grid(left_side,
 right_side,
 ncol = 2) +
    draw_label(paste(figure_name, Sys.time()),
               x = 0, y = 0.02, hjust = 0, size = 6) 
+
+f1
+ggsave("Figure1.png", f1, height=6, width=10)
 
 ```
 
@@ -1169,11 +1175,19 @@ ggplot(this_data,
 }
 
 ```
+
+# Figure S2
+```{r}
+fs2 <- plot_gene_count_correlations(expr_gene_and_read_counts_to_plot,
+                             "Correlations calculated across all datasets")
+
+fs2
+ggsave("Figure_S2.png", fs2 + ggtitle(""))
+
+```
+
 ## for all datasets
 ```{r rna-seq-survey-MS-v19-42 }
-
-plot_gene_count_correlations(expr_gene_and_read_counts_to_plot,
-                             "Correlations calculated across all datasets")
 
 plot_gene_count_correlations(expr_gene_and_read_counts_to_plot %>% 
   filter(dataset_id %in% datasets_with_normal_expressed_gene_numbers),
@@ -1296,8 +1310,14 @@ f2 <- plot_grid(f2ab,
                  rel_widths = c(4,2.3))
 
 figure_name <- "f2"
-f2 +   draw_label(paste(figure_name, Sys.time()),
+f2_labeled <- f2 +   draw_label(paste(figure_name, Sys.time()),
              x = 0, y = 0.02, hjust = 0, size = 6) 
+
+
+f2_labeled
+ggsave("Figure2.png", f2_labeled, height=8, width=10)
+
+
 
 ```
 
