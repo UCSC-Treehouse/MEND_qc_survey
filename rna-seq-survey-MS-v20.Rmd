@@ -148,6 +148,8 @@ col_spec <- cols(
   dataset_id = col_character(),
   disease = col_character(),
   pedaya = col_character(),
+  race = col_character(),
+  ethnicity = col_character(),
   gender = col_character(),
   cohort_name = col_character(),
   cohort_code = col_character(),
@@ -266,14 +268,19 @@ counts_and_meta %>%
 
 ```
 
-# repository supp table
+# Table S2 - repositories
 ```{r}
 
 repo_info <- read_tsv("inputs/repos.tsv")
 
-repo_info %>%
+repo_table <- repo_info %>%
+  filter(repo_abbrev %in% counts_and_meta$source_repository) %>%
   rename(`Name`=repo_name, `Abbreviation`=repo_abbrev, URL = repo_url) %>%
-  select(-source_accession_pattern) %>%
+  select(-source_accession_pattern) 
+
+write_tsv(repo_table, "Table_S2_repo_table.tsv")
+
+repo_table %>%
   kable %>% 
   kable_styling(bootstrap_options = "striped", full_width = F)
 
@@ -281,10 +288,17 @@ repo_info %>%
 
 # Table S3 - data access table
 ```{r}
-counts_and_meta %>% 
-  select(cohort_code, cohort_name, source_repository, repository_cohort_accession) %>% # removed DOI link
+cohort_table <- counts_and_meta %>% 
+  select(cohort_code, cohort_name, source_repository, repository_cohort_accession, n_in_cohort) %>% # removed DOI link
 #  group_by(across(c(-disease)))
   distinct %>%
+  arrange(desc(n_in_cohort)) 
+
+write_tsv(cohort_table, "Table_S3_cohort_table.tsv")
+
+# snakecase::to_any_case("cohort_code", case = "title")
+cohort_table %>% 
+  # clean_names(case = "title") %>%
   kable %>% 
   kable_styling(bootstrap_options = "striped", full_width = F)
 ```
@@ -292,9 +306,45 @@ counts_and_meta %>%
 
 
 
-# Genders in dataset
+# Race and gender in dataset
 
 ```{r rna-seq-survey-MS-v19-10 }
+
+counts_and_meta %>%
+  tabyl(race)
+
+
+counts_and_meta %>%
+  select(race) %>%
+  na.omit() %>%
+  tabyl(race) %>%
+  adorn_totals("row")
+
+
+counts_and_meta %>%
+    select(ethnicity) %>%
+  na.omit() %>%
+tabyl(ethnicity) %>%
+  adorn_totals("row")
+
+
+counts_and_meta %>%
+  filter(ethnicity == "Hispanic or Latino") %>%
+  tabyl(race)
+
+
+counts_and_meta %>%
+  filter(ethnicity == "Hispanic or Latino") %>%
+  select(race) %>%
+  na.omit() %>%
+tabyl(race) %>%
+  adorn_totals("row")
+```
+
+
+# Genders in dataset
+
+```{r rna-seq-survey-MS-v19-10b }
 
 
 table(counts_and_meta$gender, useNA = "always")
@@ -1281,6 +1331,8 @@ cor_plots_excluding_high_read_depth_and_low_gene_count_datasets <- ggplot(this_d
 cor_plots_excluding_high_read_depth_and_low_gene_count_datasets
 
 ```
+
+
 # Figure 2
 ```{r rna-seq-survey-MS-v19-44, fig.height=8, fig.width=10}
 
