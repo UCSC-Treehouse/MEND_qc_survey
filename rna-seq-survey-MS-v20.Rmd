@@ -489,23 +489,20 @@ comparison_of_distributions <- read_type_fractions_long %>%
             iqr = IQR(dataset_value))
 
 kable(comparison_of_distributions %>%
-      mutate_if(is.double, ~100*.), digits = 3)
+      mutate_if(is.double, ~100*.), digits = 3) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = T)
 
 
 kable(comparison_of_distributions %>%
         select(-variance, -p25, -p75) %>%
-      mutate_if(is.double, ~100*.), digits = 0)
+      mutate_if(is.double, ~100*.), digits = 0) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = T)
 
 
 ```
 
 # statements about read type fractions
-
-## Overview
-```{r rna-seq-survey-MS-v19-17}
-comparison_of_distributions
-```
-
+See comparison_of_distributions table above
 
 ## unmapped
 ```{r rna-seq-survey-MS-v19-18 }
@@ -613,7 +610,7 @@ names(colors_for_read_types) <- gsub(" reads", "", names(these_colors_with_MEND)
 colors_for_read_types <- c(colors_for_read_types, 
                            "Genome" = "darkblue",
                            "Exon" = "darkblue",
-                           "Aligned reads" = "darkgrey")
+                           "Mapped reads" = "darkgrey")
 
 plot1_colnames <- c("label", "x1", "x2", "y1", "y2")
 
@@ -623,7 +620,7 @@ read_type_schematic_data_as_vector <- c("Duplicate", 3, 4, 5, 6,
                        "Non-exonic", 4.5, 5.5, 3, 4,
                        "Unmapped", 6, 7, 3, 4,
                        "Exon", 2.5, 4, 1, 2,
-                       "Aligned reads", 2.8, 2.8, 6, 7)
+                       "Mapped reads", 2.8, 2.8, 6, 7)
 
 rows_in_schematic <- length(read_type_schematic_data_as_vector)/length(plot1_colnames)
 
@@ -635,7 +632,7 @@ read_type_schematic_data <- matrix(read_type_schematic_data_as_vector,
   mutate(
     base_color = colors_for_read_types[match(label, names(colors_for_read_types))],
     border_color = case_when(
-      label %in% c("Aligned reads", "Genome", "MEND", "Exon") ~ NA_character_,
+      label %in% c("Mapped reads", "Genome", "MEND", "Exon") ~ NA_character_,
       TRUE ~ base_color),
     fill_color = ifelse(label %in% c("MEND", "Exon"),  base_color, "white"),
     text_color = case_when(
@@ -918,7 +915,8 @@ MEND_pct <- read_counts_with_MEND_fractions %>%
 
 kable(MEND_pct %>%
         select(-variance, -p25, -p75) %>%
-      mutate_if(is.double, ~100*.), digits = 0)
+      mutate_if(is.double, ~100*.), digits = 0) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 
 head(sort(read_counts_with_MEND_fractions$pct_MEND_of_total))
 
@@ -1117,7 +1115,6 @@ sort(counts_and_meta$genes_expressed_above_0) [1:100]
 ```{r rna-seq-survey-MS-v19-37 }
 library(corrr)
 
-
 counts_and_meta %>% 
     ungroup %>% 
     select_if(is.double) %>%
@@ -1127,7 +1124,8 @@ counts_and_meta %>%
   mutate(Read_type_count = factor(Read_type_count, levels = read_type_names)) %>%
   arrange(Read_type_count) %>%
   select(c(Read_type_count, starts_with("genes_expressed"))) %>%
-  kable(caption = "Correlations with all datasets", digits = 2)
+  kable(caption = "Correlations with all datasets", digits = 2) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 
 ```
 
@@ -1145,7 +1143,8 @@ counts_and_meta %>%
   mutate(Read_type_count = factor(Read_type_count, levels = read_type_names)) %>%
   arrange(Read_type_count) %>%
   select(c(Read_type_count, starts_with("genes_expressed"))) %>%
-  kable(caption = "Correlations with all but low gene count datasets", digits = 2)
+  kable(caption = "Correlations with all but low gene count datasets", digits = 2) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 
 ```
 
