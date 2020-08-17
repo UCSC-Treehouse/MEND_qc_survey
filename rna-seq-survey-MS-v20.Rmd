@@ -9,64 +9,24 @@ output:
 ---
 
 
-# Versions
-V20 - Using SJC disease designations for cohort assignment
-
-V19 - updated to survey_data.2020-07-08_17.17.10.txt, then survey_data.2020-07-14_11.31.11.txt
-
-V18 - updated to survey_data.2020-07-02_11.01.36.txt
-
-V17 - Change sample to dataset; change project to cohort
-
-V16 - use namer on chunks
-
-V15 - change correlation plots to small dots
-
-V14 - combine plots
-
-V13 - change gene count threshold from categporical to numeric 
-
-V12 - exclude datasets with fewer than 100 measured genes and use pre-generated survey_data
-
-V11 - color consistency
-
-V10 - calculate non genic and all exonic counts for correlations analysis
-
-V9 - add gene count; import readdist.txt for more nuanced comparison of cor with gene count
-
-# Overview
-
-
-reference range for unmapped reads is calculated based on unmapped reads/total
-
-reference range for duplicate reads  is calculated based on 
-duplicate reads/mapped reads
-where mapped reads = total mapped and multi-mapped (<20x) reads)
-
-reference range for non-exonic reads  is calculated based on 
-non-exonic/non duplicate reads)
-where non duplicate reads = exonic and non-exonic non dupe reads)
-
-The composition fractions are not dependent on higher level ones
-
 # Libraries
-```{r rna-seq-survey-MS-v19-1 }
+```{r rna-seq-survey-MS-v20-1 }
 
 library(tidyverse)
 library(janitor)
-library(viridis)
 library(knitr)
-library(ggthemes) # for theme_linedraw() 
-library(ggpubr) # for stat_cor
-library(cowplot) # for ggdraw and draw_label
+library(cowplot) # for plot_grid and draw_label
 library(RColorBrewer)
-library(pander)
+library(pander) # to make session info
 library(kableExtra)
-
+library(snakecase)
+library(corrr)
 ```
 
 # Config
-```{r rna-seq-survey-MS-v19-2 }
+```{r rna-seq-survey-MS-v20-2 }
+
+analysis_modifier <- "main"
 
 inputs_dir <- "inputs"
 data_file <- tibble(files = list.files(inputs_dir)) %>%
@@ -79,14 +39,14 @@ print(data_file)
 ```
 
 # Settings
-```{r rna-seq-survey-MS-v19-3 }
+```{r rna-seq-survey-MS-v20-3 }
 
 min_genes_gt_0 <- 100
 
 ```
 
 # Functions
-```{r rna-seq-survey-MS-v19-4 }
+```{r rna-seq-survey-MS-v20-4 }
 
 is_outlier <- function(x) {
   (x > quantile(x, 0.75) + 1.5*IQR(x)) |
@@ -141,7 +101,7 @@ StatBin2 <- ggproto(
 ```
 
 # Import data
-```{r rna-seq-survey-MS-v19-5 }
+```{r rna-seq-survey-MS-v20-5 }
 
 col_spec <- cols(
   .default = col_double(),
@@ -159,15 +119,19 @@ col_spec <- cols(
   repository_dataset_accession = col_character()
 )
 
-counts_and_meta <- read_tsv(file.path(inputs_dir, data_file), col_types = col_spec) %>%
+counts_and_meta_raw <- read_tsv(file.path(inputs_dir, data_file), col_types = col_spec)
+
+counts_and_meta <- counts_and_meta_raw %>%
   group_by(cohort_code) %>%
   mutate(n_in_cohort = n())
+
+write_csv(counts_and_meta, "results/Table_S1.csv")
 
 ```
 
 
 # Colors
-```{r rna-seq-survey-MS-v19-6 }
+```{r rna-seq-survey-MS-v20-6 }
 
 # brewer.pal(8, "Paired")
 
@@ -187,14 +151,14 @@ these_colors_with_MEND = c(these_colors, "MEND reads"="#000000")
 
 
 # Datasets analyzed
-```{r rna-seq-survey-MS-v19-7 }
+```{r rna-seq-survey-MS-v20-7 }
 
 nrow(counts_and_meta)
 
 ```
 # Diseases in dataset
 
-```{r rna-seq-survey-MS-v19-8 }
+```{r rna-seq-survey-MS-v20-8 }
 counts_and_meta %>% tabyl(disease)
 
 disease_freq_table <- counts_and_meta$disease %>%
@@ -208,7 +172,7 @@ disease_freq_table <- counts_and_meta$disease %>%
 
 colnames(disease_freq_table)[1]="Disease"
 
-write_tsv(disease_freq_table, "results/disease_freq_table.txt")
+write_tsv(disease_freq_table, "results/disease_freq_table.tsv")
 
 disease_freq_table  %>%
   kable %>% 
@@ -221,9 +185,7 @@ table(str_detect(counts_and_meta$disease, "leukemia"))
 
 # Cohorts in dataset
 
-```{r rna-seq-survey-MS-v19-9 }
-
-library(ggthemes)
+```{r rna-seq-survey-MS-v20-9, fig.height=6, fig.width=5}
 
 old_cohort_size_histogram <- ggplot(counts_and_meta) + 
   geom_histogram(aes(n_in_cohort, group=cohort_code), 
@@ -234,7 +196,12 @@ old_cohort_size_histogram <- ggplot(counts_and_meta) +
   ylab("Cohorts") + 
   theme(legend.position="none")
 
-cohort_size_histogram <- ggplot(counts_and_meta %>%
+
+# max(table(counts_and_meta$n_in_cohort)/as.numeric(names(table(counts_and_meta$n_in_cohort))))
+cohort_hist_bin_size <- 10
+
+
+cohort_size_histogram_raw <- ggplot(counts_and_meta %>%
   select(cohort_code, n_in_cohort) %>%
   distinct ) + 
   geom_histogram(aes(n_in_cohort), 
@@ -244,12 +211,16 @@ cohort_size_histogram <- ggplot(counts_and_meta %>%
   theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +  
   xlab("Cohort size") +
-  scale_y_continuous("Cohorts", breaks = seq(0, 8, 2)) + 
   theme(legend.position="none")
 
-cohort_size_histogram
+max_y_val <- max(ggplot_build(cohort_size_histogram_raw)$data[[1]][,"y"])
 
-# for cohorts that are more than 75% one disease, color by that disease
+
+cohort_size_histogram <- cohort_size_histogram_raw + 
+  scale_y_continuous("Cohorts", breaks = seq(0, ceiling(max_y_val/2) * 2, 2)) 
+  
+
+cohort_size_histogram
 
 n_distinct(counts_and_meta$cohort_code)
 sort(unique(counts_and_meta$n_in_cohort))
@@ -269,7 +240,7 @@ counts_and_meta %>%
 ```
 
 # Table S2 - repositories
-```{r}
+```{r rna-seq-survey-MS-v20-10}
 
 repo_info <- read_tsv("inputs/repos.tsv")
 
@@ -278,7 +249,7 @@ repo_table <- repo_info %>%
   rename(`Name`=repo_name, `Abbreviation`=repo_abbrev, URL = repo_url) %>%
   select(-source_accession_pattern) 
 
-write_tsv(repo_table, "Table_S2_repo_table.tsv")
+write_tsv(repo_table, "results/Table_S2_repo_table.tsv")
 
 repo_table %>%
   kable %>% 
@@ -287,18 +258,21 @@ repo_table %>%
 ```
 
 # Table S3 - data access table
-```{r}
+```{r rna-seq-survey-MS-v20-11}
 cohort_table <- counts_and_meta %>% 
   select(cohort_code, cohort_name, source_repository, repository_cohort_accession, n_in_cohort) %>% # removed DOI link
 #  group_by(across(c(-disease)))
   distinct %>%
   arrange(desc(n_in_cohort)) 
 
-write_tsv(cohort_table, "Table_S3_cohort_table.tsv")
+colnames(cohort_table) <- to_any_case(colnames(cohort_table), case = "sentence")
 
-# snakecase::to_any_case("cohort_code", case = "title")
+write_tsv(cohort_table, "results/Table_S3_cohort_table.tsv")
+
+
+
+
 cohort_table %>% 
-  # clean_names(case = "title") %>%
   kable %>% 
   kable_styling(bootstrap_options = "striped", full_width = F)
 ```
@@ -308,7 +282,7 @@ cohort_table %>%
 
 # Race and gender in dataset
 
-```{r rna-seq-survey-MS-v19-10 }
+```{r rna-seq-survey-MS-v20-12 }
 
 counts_and_meta %>%
   tabyl(race)
@@ -344,7 +318,7 @@ tabyl(race) %>%
 
 # Genders in dataset
 
-```{r rna-seq-survey-MS-v19-10b }
+```{r rna-seq-survey-MS-v20-13 }
 
 
 table(counts_and_meta$gender, useNA = "always")
@@ -363,7 +337,7 @@ counts_and_meta %>%
 
 # Ages in dataset
 
-```{r rna-seq-survey-MS-v19-11 }
+```{r rna-seq-survey-MS-v20-14 }
 
 
 table(counts_and_meta$pedaya, useNA = "always")
@@ -381,7 +355,7 @@ table(is.na(counts_and_meta$age_at_dx))
 
 ```
 # Read lengths in dataset
-```{r rna-seq-survey-MS-v19-12 }
+```{r rna-seq-survey-MS-v20-15 }
 
 seq_len_round_25 <- round(counts_and_meta$seq_length / 25) * 25
 table(seq_len_round_25, useNA = "always")
@@ -417,16 +391,63 @@ IQR(counts_and_meta$seq_length, na.rm = TRUE)
 read_length_histogram
 
 ```
+# Figure 1
+```{r rna-seq-survey-MS-v20-16, fig.height=6, fig.width=5}
 
-```{r rna-seq-survey-MS-v19-13 }
-subset(counts_and_meta, Mapped > Total_reads)
-subset(counts_and_meta, MND > Mapped)
-subset(counts_and_meta, MEND > MND)
+
+
+figure_name <- "f1"
+
+
+
+f1 <- plot_grid(cohort_size_histogram,
+read_length_histogram,
+nrow=2,
+labels = c("A", "B")) +
+   draw_label(paste(figure_name, Sys.time()),
+              x = 0, y = 0.02, hjust = 0, size = 6) 
+
+# 
+# right_side <- plot_grid(read_type_schematic,
+# read_type_fractions_schematic,
+# nrow=2,
+# rel_heights = c(1, 2),
+# labels = c("A", "B"))
+# 
+# f2 <- plot_grid(left_side,
+# right_side,
+# ncol = 2) +
+#    draw_label(paste(figure_name, Sys.time()),
+#               x = 0, y = 0.02, hjust = 0, size = 6) 
+
+f1
+ggsave("results/Figure_1.png", f1, height=6, width=10)
+
+# 
+# 
+# f1 <- plot_grid(cohort_size_histogram,
+# read_length_histogram,
+# nrow=2,
+# labels = c("A", "B")) +
+#    draw_label(paste(figure_name, Sys.time()),
+#               x = 0, y = 0.02, hjust = 0, size = 6) 
+
+```
+
+
+
+# Check for counting errors
+```{r rna-seq-survey-MS-v20-17 }
+
+if(nrow(subset(counts_and_meta, Mapped > Total_reads)) > 0) stop("Counting error")
+if(nrow(subset(counts_and_meta, MND > Mapped)) > 0) stop("Counting error")
+if(nrow(subset(counts_and_meta, MEND > MND)) > 0) stop("Counting error")
+
 ```
 
 
 # Summarize total read counts
-```{r rna-seq-survey-MS-v19-14 }
+```{r rna-seq-survey-MS-v20-18 }
 
 min(counts_and_meta$Total_reads)
 
@@ -459,7 +480,7 @@ total_read_count_histogram
 # Calculate percentages
 
 
-```{r rna-seq-survey-MS-v19-15 }
+```{r rna-seq-survey-MS-v20-19 }
 
  read_counts_with_read_type_fractions <- counts_and_meta  %>%
   arrange(desc(Total_reads)) %>%
@@ -476,7 +497,7 @@ read_type_fractions_long <- read_counts_with_read_type_fractions %>%
 ```
 
 # Summarize read type fractions
-```{r rna-seq-survey-MS-v19-16 }
+```{r rna-seq-survey-MS-v20-20 }
 
 comparison_of_distributions <- read_type_fractions_long %>% 
   group_by(read_type_fraction_name) %>%
@@ -505,14 +526,14 @@ kable(comparison_of_distributions %>%
 See comparison_of_distributions table above
 
 ## unmapped
-```{r rna-seq-survey-MS-v19-18 }
+```{r rna-seq-survey-MS-v20-21 }
 # in 77 datasets, more than 25% of reads are unmapped
 table(read_counts_with_read_type_fractions$pct_unmapped_of_total>0.25)
 ```
 
 
 ## duplicate
-```{r rna-seq-survey-MS-v19-19 }
+```{r rna-seq-survey-MS-v20-22 }
 
 # 426 datasets have more than 50% duplicates (Fig 2A).
 read_counts_with_read_type_fractions %>%
@@ -533,7 +554,7 @@ fiftypct %>% tabyl(median_lt_50_and_has_a_dataset)
 ```
 
 ## exonic
-```{r rna-seq-survey-MS-v19-20 }
+```{r rna-seq-survey-MS-v20-23 }
 read_counts_with_read_type_fractions %>%
   mutate(above_50 = pct_non_exonic_of_non_dupe>0.50) %>%
   tabyl(above_50)
@@ -554,7 +575,7 @@ fiftypcte %>% tabyl(median_lt_50_and_has_a_dataset)
 
 ## Correlation of depth of sequencing to duplicate read fraction
 ### Does the depth of sequencing correlate to the number of duplicates? How much variance does that explain?
-```{r rna-seq-survey-MS-v19-21 }
+```{r rna-seq-survey-MS-v20-24 }
 cor_tot_reads_and_dupes <- cor(read_counts_with_read_type_fractions$Total_reads, 
     read_counts_with_read_type_fractions$pct_dupe_of_mapped,
     method = c("pearson"))
@@ -565,12 +586,12 @@ round(cor_tot_reads_and_dupes^2, 2)
 ```
 # Figure S1
 ## Plot correlation of depth of sequencing to duplicate read fraction
-```{r rna-seq-survey-MS-v19-22 }
+```{r rna-seq-survey-MS-v20-25 }
 
 this_data <- read_counts_with_read_type_fractions %>%
   select(Total_reads, pct_dupe_of_mapped)
 
-this_plot_title <- paste("Correlation of Total_reads and % Duplicates")
+this_plot_title <- "Correlation of Total_reads and % Duplicates"
 
 these_stats <- this_data  %>%
   ungroup %>%
@@ -595,14 +616,14 @@ fs1 <- ggplot(this_data,
   ylab("% Duplicates")
 
 
-ggsave("Figure_S1.png", fs1 + ggtitle(""))
+ggsave("results/Figure_S1.png", fs1 + ggtitle(""))
 
 ```
 
 
 
 # Generate schematic defining read types
-```{r rna-seq-survey-MS-v19-23, fig.height=2, fig.width=6}
+```{r rna-seq-survey-MS-v20-26, fig.height=2, fig.width=6}
 
 colors_for_read_types <- these_colors_with_MEND
 names(colors_for_read_types) <- gsub(" reads", "", names(these_colors_with_MEND))
@@ -675,7 +696,7 @@ read_type_schematic
 ```
 
 # Generate schematic defining read type fractions
-```{r rna-seq-survey-MS-v19-24 }
+```{r rna-seq-survey-MS-v20-27 }
 stat_names <- c("pct_unmapped_of_total",  "pct_dupe_of_mapped", "pct_non_exonic_of_non_dupe")
 stat_labels <- c("Unmapped",  "Duplicate", "Non-exonic") 
 complement_stat_names <- c("Mapped reads",  "Non-duplicate reads", "Exonic reads") 
@@ -689,7 +710,8 @@ comparison_of_remaining <- read_type_fractions_long %>%
     median = round(1-median(dataset_value), 2),
     p25 = round(1-quantile(dataset_value, 0.25), 2),
     p75 = round(1-quantile(dataset_value, 0.75), 2)) %>%
-      mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x͂=",100* median, "%)"))
+#      mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; x͂=",100* median, "%)"))
+mutate(bar_label = paste0 (read_type_fraction_name, "\n(", 100*min, "-", 100*max, "% of ", divisor_name[match(read_type_fraction_name, complement_stat_names)], "; med.=", 100* median, "%)"))
 
 positive_bars <- comparison_of_remaining %>%
   select(-min, -max, -p25, -p75) %>%
@@ -722,11 +744,11 @@ MEND_stats_of_total <- counts_and_meta  %>%
     median = round(1-median(pct_MEND_of_total), 2))
 
 MEND_bar <- tibble(read_type_fraction_name = "MEND reads",
-                    read_type_fraction_label = read_type_fraction_name,
-                    bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; x͂=",100* median, "%)")),
-                    abs_median = 1,
-                    position = "1"
-                    )
+                   read_type_fraction_label = read_type_fraction_name,
+                   bar_label = with(MEND_stats_of_total, paste0 ("MEND reads\n(", 100*min, "-", 100*max, "% of total reads; med.=",100* median, "%)")),
+                   abs_median = 1,
+                   position = "1"
+)
 
 bar_names_in_order <- c("Total reads", "Mapped reads", "Non-duplicate reads", "Exonic reads", "MEND reads")
   
@@ -765,7 +787,7 @@ text_angle = ifelse(abs_median<0.1, 90,0)
 ```
 
 # read_type_fractions_schematic
-```{r rna-seq-survey-MS-v19-25, fig.height=4, fig.width=8}
+```{r rna-seq-survey-MS-v20-28, fig.height=4, fig.width=8}
 read_type_fractions_schematic <- ggplot(all_bars_rel, aes(y=read_type_fraction_name,
                 x=rel_median, group = position)) + 
    geom_col(aes(fill = fill_val,
@@ -810,35 +832,32 @@ read_type_fractions_schematic
 
 ```
 
-# Figure 1
-```{r rna-seq-survey-MS-v19-26, fig.height=6, fig.width=10}
+# Figure 2
+```{r rna-seq-survey-MS-v20-29, fig.height=6, fig.width=5}
 
-figure_name <- "f1"
+figure_name <- "f2"
 
-right_side <- plot_grid(read_type_schematic,
+f2 <- plot_grid(read_type_schematic,
 read_type_fractions_schematic,
 nrow=2,
 rel_heights = c(1, 2),
-labels = c("C", "D"))
-
-left_side <- plot_grid(cohort_size_histogram,
-read_length_histogram,
-nrow=2,
-labels = c("A", "B"))
-
-f1 <- plot_grid(left_side,
-right_side,
-ncol = 2) +
+labels = c("A", "B")) +
    draw_label(paste(figure_name, Sys.time()),
               x = 0, y = 0.02, hjust = 0, size = 6) 
+# 
+# f2 <- plot_grid(left_side,
+# right_side,
+# ncol = 2) +
+#    draw_label(paste(figure_name, Sys.time()),
+#               x = 0, y = 0.02, hjust = 0, size = 6) 
 
-f1
-ggsave("Figure1.png", f1, height=6, width=10)
+f2
+ggsave("results/Figure_2.png", f2, height=6, width=10)
 
 ```
 
 
-```{r rna-seq-survey-MS-v19-27 }
+```{r rna-seq-survey-MS-v20-30 }
 
 stat_names <- c("pct_unmapped_of_total",  "pct_dupe_of_mapped", "pct_non_exonic_of_non_dupe")
 stat_label <- c("% unmapped", "% duplicate \n(of mapped)", "% non-exonic \n(of non-duplicate)")
@@ -848,7 +867,7 @@ names(stat_label) <- stat_names
 ```
 
 # Plot read fractions
-```{r rna-seq-survey-MS-v19-28, fig.height=4.5, fig.width=8.25}
+```{r rna-seq-survey-MS-v20-31, fig.height=4.5, fig.width=8.25}
 
 colors_for_stat_names <- these_colors[c("Mapped reads", "Non-duplicate reads","Exonic reads")]
 names(colors_for_stat_names) <- stat_names
@@ -890,7 +909,7 @@ read_type_fractions_histogram
 
 
 # Calculate MEND reads as a fraction of total
-```{r rna-seq-survey-MS-v19-29 }
+```{r rna-seq-survey-MS-v20-32 }
 
 read_counts_with_MEND_fractions <- counts_and_meta  %>%
   arrange(desc(Total_reads)) %>%
@@ -941,7 +960,7 @@ read_counts_with_MEND_fractions %>%
 
 
 # Show per-cohort distribution of read_type_fractions 
-```{r rna-seq-survey-MS-v19-30, fig.height=6, fig.width=8}
+```{r rna-seq-survey-MS-v20-33, fig.height=6, fig.width=8}
 
 figure_name <- "fracs_by_group"
 
@@ -975,13 +994,13 @@ read_type_fractions_per_cohort_boxplot
 
 # Characterize Cohort 4
 
-```{r rna-seq-survey-MS-v19-31 }
+```{r rna-seq-survey-MS-v20-34 }
 
 read_type_names <- c("Total_reads", "Mapped",  "MND", "MEND")
 
 ```
 
-```{r rna-seq-survey-MS-v19-32 }
+```{r rna-seq-survey-MS-v20-35 }
 this_cohort_name <- "EGAD00001003279"
 
 this_cohort_code <- subset(read_counts_with_read_type_fractions, cohort_name == this_cohort_name)$cohort_code[1]
@@ -990,7 +1009,7 @@ this_cohort_code
 ```
 
 ## in MS
-```{r rna-seq-survey-MS-v19-33 }
+```{r rna-seq-survey-MS-v20-36 }
 
  read_counts_with_read_type_fractions %>%
   filter(cohort_code == this_cohort_code) %>%
@@ -1006,7 +1025,7 @@ read_counts_with_read_type_fractions %>%
 ```
 
 ## other
-```{r rna-seq-survey-MS-v19-34, fig.height=6, fig.width=8}
+```{r rna-seq-survey-MS-v20-37, fig.height=6, fig.width=8}
 
 
  counts_and_meta_long <- counts_and_meta  %>%
@@ -1081,7 +1100,7 @@ counts_and_meta_long_one_proj %>%
 # Expressed genes
 
 ## What is the distribution of measured genes?
-```{r rna-seq-survey-MS-v19-35 }
+```{r rna-seq-survey-MS-v20-38 }
 
 gene_counts_long <- counts_and_meta %>%
   pivot_longer(cols = starts_with("genes_"), names_to = "Expression_threshold")  %>%
@@ -1095,16 +1114,14 @@ ggplot(gene_counts_long) +
   scale_fill_brewer(palette = "Set1") +
     theme(axis.line.x = element_line(color="darkgrey", size = 0.5),
         axis.line.y = element_line(color="darkgrey", size = 0.5)) +
-#  theme_linedraw(base_size = 20) +
     theme(legend.position = "none") +
-  # scale_fill_brewer(palette = "Set1") +
   ylab("Datasets") +
   xlab("Measured genes") 
   
 ```
 
 # What are the exact lowest gene counts?
-```{r rna-seq-survey-MS-v19-36}
+```{r rna-seq-survey-MS-v20-39 }
 
 sort(counts_and_meta$genes_expressed_above_0) [1:100]
 
@@ -1112,8 +1129,8 @@ sort(counts_and_meta$genes_expressed_above_0) [1:100]
 
 
 # correlations with all datasets
-```{r rna-seq-survey-MS-v19-37 }
-library(corrr)
+```{r rna-seq-survey-MS-v20-40 }
+# library(corrr)
 
 counts_and_meta %>% 
     ungroup %>% 
@@ -1131,7 +1148,7 @@ counts_and_meta %>%
 
 
 ## correlations with all but low gene count datasets
-```{r rna-seq-survey-MS-v19-38 }
+```{r rna-seq-survey-MS-v20-41 }
 
 counts_and_meta %>% 
   filter(genes_expressed_above_0 > min_genes_gt_0) %>%
@@ -1151,7 +1168,7 @@ counts_and_meta %>%
 # Plot correlations betweeen gene counts and read types
 
 ## Groom data
-```{r rna-seq-survey-MS-v19-39 }
+```{r rna-seq-survey-MS-v20-42 }
 expr_gene_and_read_counts_to_plot <- counts_and_meta %>%
   pivot_longer (cols = c(MND, MEND, Total_reads, Mapped), names_to = "Read_type", values_to = "Read_count") %>%
   pivot_longer (cols = starts_with("genes_expressed"), names_to = "Expression_threshold", values_to = "Gene_count") %>%
@@ -1162,7 +1179,7 @@ expr_gene_and_read_counts_to_plot <- counts_and_meta %>%
 
 
 ## Identify datasets with unusual gene counts or read depths
-```{r rna-seq-survey-MS-v19-40 }
+```{r rna-seq-survey-MS-v20-43 }
 
 datasets_with_normal_expressed_gene_numbers <- counts_and_meta %>%
   filter(genes_expressed_above_0 > min_genes_gt_0) %>%
@@ -1182,7 +1199,7 @@ datasets_with_outlier_depths <- counts_and_meta %>%
 ```
 
 # Function for calculating gene count correlations and plotting results
-```{r rna-seq-survey-MS-v19-41 }
+```{r rna-seq-survey-MS-v20-44 }
 
 plot_gene_count_correlations <- function(this_data = expr_gene_and_read_counts_to_plot, this_plot_title = "gene count correlations"){
 
@@ -1226,17 +1243,17 @@ ggplot(this_data,
 ```
 
 # Figure S2
-```{r}
+```{r rna-seq-survey-MS-v20-45}
 fs2 <- plot_gene_count_correlations(expr_gene_and_read_counts_to_plot,
                              "Correlations calculated across all datasets")
 
 fs2
-ggsave("Figure_S2.png", fs2 + ggtitle(""))
+ggsave("results/Figure_S2.png", fs2 + ggtitle(""))
 
 ```
 
 ## for all datasets
-```{r rna-seq-survey-MS-v19-42 }
+```{r rna-seq-survey-MS-v20-46 }
 
 plot_gene_count_correlations(expr_gene_and_read_counts_to_plot %>% 
   filter(dataset_id %in% datasets_with_normal_expressed_gene_numbers),
@@ -1268,7 +1285,7 @@ plot_gene_count_correlations(
 ```
 
 # corr plot for figure
-```{r rna-seq-survey-MS-v19-43 }
+```{r rna-seq-survey-MS-v20-47 }
 
 max_total_read_depth <- 250*1e6
 print(min_genes_gt_0)
@@ -1332,49 +1349,48 @@ cor_plots_excluding_high_read_depth_and_low_gene_count_datasets
 ```
 
 
-# Figure 2
-```{r rna-seq-survey-MS-v19-44, fig.height=8, fig.width=10}
+# Figure 3
+```{r rna-seq-survey-MS-v20-48, fig.height=8, fig.width=10}
 
-f2a <- read_type_fractions_histogram +
+f3a <- read_type_fractions_histogram +
             theme(strip.text.x = element_text(size = 10, face = "bold"),
                   axis.title.x=element_blank(),
                   axis.text.x=element_blank())
 
-f2b <- read_type_fractions_per_cohort_boxplot +
+f3b <- read_type_fractions_per_cohort_boxplot +
             theme(strip.text.x = element_blank(),
                   strip.background = element_blank(),
                   strip.text = element_blank())
 
-f2ab <- plot_grid(f2a, 
-                  f2b,
+f3ab <- plot_grid(f3a, 
+                  f3b,
                   ncol = 1,
                   rel_heights = c(1.5, 6),
                   align = "v",
                   labels = "AUTO")
-f2c <- plot_grid(cor_plots_excluding_high_read_depth_and_low_gene_count_datasets,
+f3c <- plot_grid(cor_plots_excluding_high_read_depth_and_low_gene_count_datasets,
           labels = "C")
 
 
-f2 <- plot_grid(f2ab,
-                 f2c,
+f3 <- plot_grid(f3ab,
+                 f3c,
                  nrow=1,
                  rel_widths = c(4,2.3))
 
-figure_name <- "f2"
-f2_labeled <- f2 +   draw_label(paste(figure_name, Sys.time()),
+figure_name <- "f3"
+f3_labeled <- f3 +   draw_label(paste(figure_name, Sys.time()),
              x = 0, y = 0.02, hjust = 0, size = 6) 
 
 
-f2_labeled
-ggsave("Figure2.png", f2_labeled, height=8, width=10)
-
+f3_labeled
+ggsave("results/Figure_3.png", f3_labeled, height=8, width=10)
 
 
 ```
 
 
 # Plot sequence length against pct duplicates
-```{r rna-seq-survey-MS-v19-45 }
+```{r rna-seq-survey-MS-v20-49 }
 
 ggplot(read_counts_with_read_type_fractions) + 
   geom_point(aes(x=seq_length, y=pct_dupe_of_mapped))
@@ -1385,20 +1401,25 @@ ggplot(read_counts_with_read_type_fractions) +
 
 ```
 
+# Generate bibtex formatted citations for packages
+```{r rna-seq-survey-MS-v20-50}
+
+used_pkgs <- c("base", "tidyverse", "janitor", "knitr", "cowplot", "RColorBrewer", "pander", "kableExtra", "snakecase", "corrr")
+write_bib(used_pkgs)
+```
 
 ## Does the depth of sequencing correlate to the number of duplicates? How much variance does that explain?
-```{r rna-seq-survey-MS-v19-46 }
+```{r rna-seq-survey-MS-v20-51 }
 cor_tot_reads_and_dupes <- cor(read_counts_with_read_type_fractions$Total_reads, 
     read_counts_with_read_type_fractions$pct_dupe_of_mapped,
     method = c("pearson"))
 round(cor_tot_reads_and_dupes, 2)
 round(cor_tot_reads_and_dupes^2, 2)
 
-
 ```
 
 # SessionInfo
-```{r rna-seq-survey-MS-v19-47}
+```{r rna-seq-survey-MS-v20-52 }
 pander(sessionInfo(), compact = FALSE)
 ```
 
