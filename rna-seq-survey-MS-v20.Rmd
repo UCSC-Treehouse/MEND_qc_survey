@@ -26,8 +26,6 @@ library(corrr)
 # Config
 ```{r rna-seq-survey-MS-v20-2 }
 
-analysis_modifier <- "main"
-
 inputs_dir <- "inputs"
 data_file <- tibble(files = list.files(inputs_dir)) %>%
   arrange(desc(files)) %>%
