@@ -27,7 +27,8 @@ library(corrr)
 ```{r rna-seq-survey-MS-v20-2 }
 
 inputs_dir <- "inputs"
-data_file <- tibble(files = list.files(inputs_dir)) %>%
+file_pattern <- "survey_data"
+data_file <- tibble(files = list.files(inputs_dir, file_pattern)) %>%
   arrange(desc(files)) %>%
   top_n(1, wt = files) %>%
   pull(files)
@@ -405,30 +406,8 @@ labels = c("A", "B")) +
    draw_label(paste(figure_name, Sys.time()),
               x = 0, y = 0.02, hjust = 0, size = 6) 
 
-# 
-# right_side <- plot_grid(read_type_schematic,
-# read_type_fractions_schematic,
-# nrow=2,
-# rel_heights = c(1, 2),
-# labels = c("A", "B"))
-# 
-# f2 <- plot_grid(left_side,
-# right_side,
-# ncol = 2) +
-#    draw_label(paste(figure_name, Sys.time()),
-#               x = 0, y = 0.02, hjust = 0, size = 6) 
-
 f1
-ggsave("results/Figure_1.png", f1, height=6, width=10)
-
-# 
-# 
-# f1 <- plot_grid(cohort_size_histogram,
-# read_length_histogram,
-# nrow=2,
-# labels = c("A", "B")) +
-#    draw_label(paste(figure_name, Sys.time()),
-#               x = 0, y = 0.02, hjust = 0, size = 6) 
+ggsave("results/Figure_1.png", f1, height=6, width=5)
 
 ```
 
@@ -841,7 +820,7 @@ nrow=2,
 rel_heights = c(1, 2),
 labels = c("A", "B")) +
    draw_label(paste(figure_name, Sys.time()),
-              x = 0, y = 0.02, hjust = 0, size = 6) 
+              x = 0, y = 0.01, hjust = 0, size = 6) 
 # 
 # f2 <- plot_grid(left_side,
 # right_side,
@@ -850,7 +829,7 @@ labels = c("A", "B")) +
 #               x = 0, y = 0.02, hjust = 0, size = 6) 
 
 f2
-ggsave("results/Figure_2.png", f2, height=6, width=10)
+ggsave("results/Figure_2.png", f2, height=6, width=5)
 
 ```
 
