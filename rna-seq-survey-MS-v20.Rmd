@@ -408,6 +408,7 @@ labels = c("A", "B")) +
 
 f1
 ggsave("results/Figure_1.png", f1, height=6, width=5)
+ggsave("results/Figure_1.pdf", f1, height=6, width=5)
 
 ```
 
@@ -594,6 +595,7 @@ fs1 <- ggplot(this_data,
 
 
 ggsave("results/Figure_S1.png", fs1 + ggtitle(""))
+ggsave("results/Figure_S1.pdf", fs1 + ggtitle(""))
 
 ```
 
@@ -830,6 +832,7 @@ labels = c("A", "B")) +
 
 f2
 ggsave("results/Figure_2.png", f2, height=6, width=5)
+ggsave("results/Figure_2.pdf", f2, height=6, width=5)
 
 ```
 
@@ -1226,7 +1229,7 @@ fs2 <- plot_gene_count_correlations(expr_gene_and_read_counts_to_plot,
 
 fs2
 ggsave("results/Figure_S2.png", fs2 + ggtitle(""))
-
+ggsave("results/Figure_S2.pdf", fs2 + ggtitle(""))
 ```
 
 ## for all datasets
@@ -1361,6 +1364,7 @@ f3_labeled <- f3 +   draw_label(paste(figure_name, Sys.time()),
 
 f3_labeled
 ggsave("results/Figure_3.png", f3_labeled, height=8, width=10)
+ggsave("results/Figure_3.pdf", f3_labeled, height=8, width=10)
 
 
 ```
