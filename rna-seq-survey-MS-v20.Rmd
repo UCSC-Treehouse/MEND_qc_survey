@@ -172,6 +172,7 @@ disease_freq_table <- counts_and_meta$disease %>%
 colnames(disease_freq_table)[1]="Disease"
 
 write_tsv(disease_freq_table, "results/disease_freq_table.tsv")
+write_csv(disease_freq_table, "results/disease_freq_table.csv")
 
 disease_freq_table  %>%
   kable %>% 
@@ -249,6 +250,7 @@ repo_table <- repo_info %>%
   select(-source_accession_pattern) 
 
 write_tsv(repo_table, "results/Table_S2_repo_table.tsv")
+write_csv(repo_table, "results/Table_S2_repo_table.csv")
 
 repo_table %>%
   kable %>% 
@@ -267,6 +269,7 @@ cohort_table <- counts_and_meta %>%
 colnames(cohort_table) <- to_any_case(colnames(cohort_table), case = "sentence")
 
 write_tsv(cohort_table, "results/Table_S3_cohort_table.tsv")
+write_csv(cohort_table, "results/Table_S3_cohort_table.csv")
 
 
 
