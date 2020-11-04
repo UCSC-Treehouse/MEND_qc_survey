@@ -1189,7 +1189,7 @@ datasets_with_outlier_depths <- counts_and_meta %>%
 plot_gene_count_correlations <- function(this_data = expr_gene_and_read_counts_to_plot, this_plot_title = "gene count correlations"){
 
 this_data <- this_data %>% 
-  mutate(Expression_threshold = paste(str_replace(Expression_threshold, "genes_expressed_above_", "genes > "), "TPM"))  
+  mutate(Expression_threshold = str_replace(Expression_threshold, "genes_expressed_above__", "genes > "))
   
   
 these_stats <- this_data  %>%
@@ -1240,6 +1240,16 @@ fs2 <- plot_gene_count_correlations(expr_gene_and_read_counts_to_plot,
 fs2
 ggsave("results/Figure_S2.png", fs2 + ggtitle(""))
 ggsave("results/Figure_S2.pdf", fs2 + ggtitle(""))
+```
+
+# Within-disease correlations
+```{r}
+
+plot_gene_count_correlations(
+  expr_gene_and_read_counts_to_plot %>% 
+    filter(disease ==  "acute lymphoblastic leukemia"),
+  "Correlations calculated among acute lymphoblastic leukemia datasets")
+
 ```
 
 # corr plot for figure
