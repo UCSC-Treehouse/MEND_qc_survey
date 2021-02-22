@@ -442,7 +442,11 @@ Total_read_counts <- counts_and_meta %>%
             iqr = IQR(dataset_value))
 
 kable(Total_read_counts %>%
-        select(-variance, -p25, -p75), digits = 1)
+        select(-variance), digits = 1)
+
+kable(Total_read_counts %>%
+        select(-variance), digits = 0)
+
 
 total_read_count_histogram <-  ggplot(counts_and_meta) + 
   geom_histogram(aes(Total_reads/1E6), 
@@ -495,6 +499,12 @@ kable(comparison_of_distributions %>%
 
 kable(comparison_of_distributions %>%
         select(-variance, -p25, -p75) %>%
+      mutate_if(is.double, ~100*.), digits = 0) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = T)
+
+
+kable(comparison_of_distributions %>%
+        select(-variance) %>%
       mutate_if(is.double, ~100*.), digits = 0) %>% 
   kable_styling(bootstrap_options = "striped", full_width = T)
 
@@ -921,7 +931,7 @@ MEND_pct <- read_counts_with_MEND_fractions %>%
             iqr = IQR(dataset_value))
 
 kable(MEND_pct %>%
-        select(-variance, -p25, -p75) %>%
+        select(-variance) %>%
       mutate_if(is.double, ~100*.), digits = 0) %>% 
   kable_styling(bootstrap_options = "striped", full_width = F)
 
